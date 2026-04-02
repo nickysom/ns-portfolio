@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel | Nicky Portfolio</title>
+  <link rel="stylesheet" href="styles/admin.css" />
+</head>
+<body>
+  <header class="admin-header">
+    <div class="container admin-header-inner">
+      <a href="index.html" class="admin-logo">Nicky Admin</a>
+
+      <nav class="admin-nav">
+        <a href="index.html">View Site</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <section class="admin-hero">
+      <div class="container">
+        <p class="admin-eyebrow">Portfolio Content Manager</p>
+        <h1>Edit your website content</h1>
+        <p class="admin-intro">
+          Sign in, update your bio, project details, links, and section content.
+        </p>
+      </div>
+    </section>
+
+    <section class="auth-section">
+      <div class="container">
+        <div class="panel">
+          <h2>Account</h2>
+          <p id="auth-status">Not signed in</p>
+
+          <div class="auth-actions">
+            <button id="login-btn" type="button">Sign in with Google</button>
+            <button id="logout-btn" type="button">Sign out</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="content-section" id="admin-content">
+      <div class="container">
+        <form id="site-content-form" class="admin-form">
+          <div class="panel">
+            <h2>Homepage Content</h2>
+
+            <div class="form-group">
+              <label for="hero-eyebrow">Hero Eyebrow</label>
+              <input
+                type="text"
+                id="hero-eyebrow"
+                name="heroEyebrow"
+                placeholder="Student • Developer • Builder"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="hero-title">Hero Title</label>
+              <input
+                type="text"
+                id="hero-title"
+                name="heroTitle"
+                placeholder="Hi, I’m Nicky"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="hero-text">Hero Description</label>
+              <textarea
+                id="hero-text"
+                name="heroText"
+                rows="4"
+                placeholder="Welcome to my portfolio..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>About Me</h2>
+
+            <div class="form-group">
+              <label for="about-text">About Text</label>
+              <textarea
+                id="about-text"
+                name="aboutText"
+                rows="6"
+                placeholder="Write your bio here"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Contact</h2>
+
+            <div class="form-group">
+              <label for="contact-email">Email</label>
+              <input
+                type="email"
+                id="contact-email"
+                name="email"
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="contact-linkedin">LinkedIn</label>
+              <input
+                type="text"
+                id="contact-linkedin"
+                name="linkedin"
+                placeholder="https://linkedin.com/in/yourname"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="contact-github">GitHub</label>
+              <input
+                type="text"
+                id="contact-github"
+                name="github"
+                placeholder="https://github.com/yourname"
+              />
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Academia</h2>
+
+            <div class="form-group">
+              <label for="academia-text">Academia Section</label>
+              <textarea
+                id="academia-text"
+                name="academiaText"
+                rows="5"
+                placeholder="Coursework, research, certifications..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Work</h2>
+
+            <div class="form-group">
+              <label for="work-text">Work Section</label>
+              <textarea
+                id="work-text"
+                name="workText"
+                rows="5"
+                placeholder="Roles, internships, responsibilities..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Awards</h2>
+
+            <div class="form-group">
+              <label for="awards-text">Awards Section</label>
+              <textarea
+                id="awards-text"
+                name="awardsText"
+                rows="5"
+                placeholder="Awards, honors, achievements..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Projects</h2>
+
+            <div class="project-editor" data-project-id="nsportfolio-game">
+              <h3>NSPortfolio Game</h3>
+
+              <div class="form-group">
+                <label for="project-1-title">Project Title</label>
+                <input
+                  type="text"
+                  id="project-1-title"
+                  name="project1Title"
+                  placeholder="NSPortfolio Game"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-1-category">Category</label>
+                <input
+                  type="text"
+                  id="project-1-category"
+                  name="project1Category"
+                  placeholder="Game Development"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-1-description">Description</label>
+                <textarea
+                  id="project-1-description"
+                  name="project1Description"
+                  rows="4"
+                  placeholder="Describe this project"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="project-1-link">Project Link</label>
+                <input
+                  type="text"
+                  id="project-1-link"
+                  name="project1Link"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <div class="project-editor" data-project-id="aws-asana-backup">
+              <h3>AWS Asana Backup Solution</h3>
+
+              <div class="form-group">
+                <label for="project-2-title">Project Title</label>
+                <input
+                  type="text"
+                  id="project-2-title"
+                  name="project2Title"
+                  placeholder="AWS Asana Backup Solution"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-2-category">Category</label>
+                <input
+                  type="text"
+                  id="project-2-category"
+                  name="project2Category"
+                  placeholder="Cloud / Automation"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-2-description">Description</label>
+                <textarea
+                  id="project-2-description"
+                  name="project2Description"
+                  rows="4"
+                  placeholder="Describe this project"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="project-2-link">Project Link</label>
+                <input
+                  type="text"
+                  id="project-2-link"
+                  name="project2Link"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <div class="project-editor" data-project-id="figma-projects">
+              <h3>Figma</h3>
+
+              <div class="form-group">
+                <label for="project-3-title">Project Title</label>
+                <input
+                  type="text"
+                  id="project-3-title"
+                  name="project3Title"
+                  placeholder="Figma"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-3-category">Category</label>
+                <input
+                  type="text"
+                  id="project-3-category"
+                  name="project3Category"
+                  placeholder="UI / UX Design"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-3-description">Description</label>
+                <textarea
+                  id="project-3-description"
+                  name="project3Description"
+                  rows="4"
+                  placeholder="Describe this project"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="project-3-link">Project Link</label>
+                <input
+                  type="text"
+                  id="project-3-link"
+                  name="project3Link"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <div class="project-editor" data-project-id="coding-projects">
+              <h3>Coding</h3>
+
+              <div class="form-group">
+                <label for="project-4-title">Project Title</label>
+                <input
+                  type="text"
+                  id="project-4-title"
+                  name="project4Title"
+                  placeholder="Coding"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-4-category">Category</label>
+                <input
+                  type="text"
+                  id="project-4-category"
+                  name="project4Category"
+                  placeholder="Software Development"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-4-description">Description</label>
+                <textarea
+                  id="project-4-description"
+                  name="project4Description"
+                  rows="4"
+                  placeholder="Describe this project"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="project-4-link">Project Link</label>
+                <input
+                  type="text"
+                  id="project-4-link"
+                  name="project4Link"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            <div class="project-editor" data-project-id="snowflake-project">
+              <h3>Big Data Analytics with Snowflake</h3>
+
+              <div class="form-group">
+                <label for="project-5-title">Project Title</label>
+                <input
+                  type="text"
+                  id="project-5-title"
+                  name="project5Title"
+                  placeholder="Big Data Analytics with Snowflake"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-5-category">Category</label>
+                <input
+                  type="text"
+                  id="project-5-category"
+                  name="project5Category"
+                  placeholder="Data Analytics"
+                />
+              </div>
+
+              <div class="form-group">
+                <label for="project-5-description">Description</label>
+                <textarea
+                  id="project-5-description"
+                  name="project5Description"
+                  rows="4"
+                  placeholder="Describe this project"
+                ></textarea>
+              </div>
+
+              <div class="form-group">
+                <label for="project-5-link">Project Link</label>
+                <input
+                  type="text"
+                  id="project-5-link"
+                  name="project5Link"
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Save Changes</h2>
+            <p id="save-message">No changes saved yet</p>
+
+            <div class="form-actions">
+              <button id="save-site-btn" type="submit">Save Website Content</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="scripts/admin.js"></script>
+</body>
+</html>
