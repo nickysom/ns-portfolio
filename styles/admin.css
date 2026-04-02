@@ -1,4 +1,3 @@
-/* styles/admin.css */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -34,6 +33,7 @@ textarea {
   z-index: 1000;
   background: rgba(15, 23, 42, 0.96);
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
 }
 
 .admin_header_inner {
@@ -183,6 +183,14 @@ textarea {
 #save_message,
 #auth_status {
   color: #cbd5e1;
+}
+
+#logout_btn {
+  display: none;
+}
+
+#admin_content {
+  display: none;
 }
 
 @media (max-width: 700px) {
