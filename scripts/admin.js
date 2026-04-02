@@ -1,4 +1,4 @@
-import { auth, db, provider } from "./firebase-config.js"
+import { auth, db, provider } from "./firebase_config.js"
 import {
   signInWithPopup,
   signOut,
@@ -10,245 +10,225 @@ import {
   setDoc
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js"
 
-const allowedAdminEmail = "nickysom@icloud.com"
+const allowed_admin_email = "nickysom@icloud.com"
 
-const loginBtn = document.getElementById("login-btn")
-const logoutBtn = document.getElementById("logout-btn")
-const authStatus = document.getElementById("auth-status")
-const adminContent = document.getElementById("admin-content")
-const form = document.getElementById("site-content-form")
-const saveMessage = document.getElementById("save-message")
+const login_btn = document.getElementById("login_btn")
+const logout_btn = document.getElementById("logout_btn")
+const auth_status = document.getElementById("auth_status")
+const admin_content = document.getElementById("admin_content")
+const form = document.getElementById("site_content_form")
+const save_message = document.getElementById("save_message")
 
 const fields = {
-  heroEyebrow: document.getElementById("hero-eyebrow"),
-  heroTitle: document.getElementById("hero-title"),
-  heroText: document.getElementById("hero-text"),
-  aboutText: document.getElementById("about-text"),
-  email: document.getElementById("contact-email"),
-  linkedin: document.getElementById("contact-linkedin"),
-  github: document.getElementById("contact-github"),
-  academiaText: document.getElementById("academia-text"),
-  workText: document.getElementById("work-text"),
-  awardsText: document.getElementById("awards-text")
+  title: document.getElementById("title_input"),
+  subtitle: document.getElementById("subtitle_input"),
+  intro: document.getElementById("intro_input"),
+  about: document.getElementById("about_input"),
+  academia: document.getElementById("academia_input"),
+  work: document.getElementById("work_input"),
+  awards: document.getElementById("awards_input"),
+  email: document.getElementById("email_input"),
+  linkedin: document.getElementById("linkedin_input"),
+  github: document.getElementById("github_input"),
+  instagram: document.getElementById("instagram_input")
 }
 
-const projectFields = {
-  "nsportfolio-game": {
-    title: document.getElementById("project-1-title"),
-    category: document.getElementById("project-1-category"),
-    description: document.getElementById("project-1-description"),
-    link: document.getElementById("project-1-link")
+const project_fields = {
+  nsportfolio_game: {
+    title: document.getElementById("nsportfolio_game_title"),
+    category: document.getElementById("nsportfolio_game_category"),
+    description: document.getElementById("nsportfolio_game_description"),
+    link: document.getElementById("nsportfolio_game_link")
   },
-  "aws-asana-backup": {
-    title: document.getElementById("project-2-title"),
-    category: document.getElementById("project-2-category"),
-    description: document.getElementById("project-2-description"),
-    link: document.getElementById("project-2-link")
+  aws_asana_backup: {
+    title: document.getElementById("aws_asana_backup_title"),
+    category: document.getElementById("aws_asana_backup_category"),
+    description: document.getElementById("aws_asana_backup_description"),
+    link: document.getElementById("aws_asana_backup_link")
   },
-  "figma-projects": {
-    title: document.getElementById("project-3-title"),
-    category: document.getElementById("project-3-category"),
-    description: document.getElementById("project-3-description"),
-    link: document.getElementById("project-3-link")
+  figma: {
+    title: document.getElementById("figma_title"),
+    category: document.getElementById("figma_category"),
+    description: document.getElementById("figma_description"),
+    link: document.getElementById("figma_link")
   },
-  "coding-projects": {
-    title: document.getElementById("project-4-title"),
-    category: document.getElementById("project-4-category"),
-    description: document.getElementById("project-4-description"),
-    link: document.getElementById("project-4-link")
+  coding: {
+    title: document.getElementById("coding_title"),
+    category: document.getElementById("coding_category"),
+    description: document.getElementById("coding_description"),
+    link: document.getElementById("coding_link")
   },
-  "snowflake-project": {
-    title: document.getElementById("project-5-title"),
-    category: document.getElementById("project-5-category"),
-    description: document.getElementById("project-5-description"),
-    link: document.getElementById("project-5-link")
+  snowflake: {
+    title: document.getElementById("snowflake_title"),
+    category: document.getElementById("snowflake_category"),
+    description: document.getElementById("snowflake_description"),
+    link: document.getElementById("snowflake_link")
   }
 }
 
-function setLoggedOutView() {
-  authStatus.textContent = "Not signed in"
-  if (adminContent) adminContent.style.display = "none"
-  if (logoutBtn) logoutBtn.style.display = "none"
-  if (loginBtn) loginBtn.style.display = "inline-block"
+function set_logged_out_view() {
+  auth_status.textContent = "Not signed in"
+  admin_content.style.display = "none"
+  login_btn.style.display = "inline-block"
+  logout_btn.style.display = "none"
 }
 
-function setLoggedInView(user) {
-  authStatus.textContent = `Signed in as ${user.email}`
-  if (adminContent) adminContent.style.display = "block"
-  if (logoutBtn) logoutBtn.style.display = "inline-block"
-  if (loginBtn) loginBtn.style.display = "none"
+function set_logged_in_view(user) {
+  auth_status.textContent = `Signed in as ${user.email}`
+  admin_content.style.display = "block"
+  login_btn.style.display = "none"
+  logout_btn.style.display = "inline-block"
 }
 
-function clearForm() {
-  Object.values(fields).forEach((field) => {
-    if (field) field.value = ""
-  })
+async function load_site_content() {
+  const site_ref = doc(db, "siteContent", "main")
+  const site_snap = await getDoc(site_ref)
 
-  Object.values(projectFields).forEach((project) => {
-    Object.values(project).forEach((field) => {
-      if (field) field.value = ""
-    })
-  })
-}
+  if (site_snap.exists()) {
+    const data = site_snap.data()
 
-async function loadSiteContent() {
-  const siteRef = doc(db, "siteContent", "main")
-  const siteSnap = await getDoc(siteRef)
-
-  if (siteSnap.exists()) {
-    const data = siteSnap.data()
-
-    fields.heroEyebrow.value = data.heroEyebrow || ""
-    fields.heroTitle.value = data.heroTitle || ""
-    fields.heroText.value = data.heroText || ""
-    fields.aboutText.value = data.aboutText || ""
+    fields.title.value = data.title || ""
+    fields.subtitle.value = data.subtitle || ""
+    fields.intro.value = data.intro || ""
+    fields.about.value = data.about || ""
+    fields.academia.value = data.academia || ""
+    fields.work.value = data.work || ""
+    fields.awards.value = data.awards || ""
     fields.email.value = data.email || ""
     fields.linkedin.value = data.linkedin || ""
     fields.github.value = data.github || ""
-    fields.academiaText.value = data.academiaText || ""
-    fields.workText.value = data.workText || ""
-    fields.awardsText.value = data.awardsText || ""
+    fields.instagram.value = data.instagram || ""
   }
 
-  const projectIds = Object.keys(projectFields)
-
   await Promise.all(
-    projectIds.map(async (projectId) => {
-      const projectRef = doc(db, "projects", projectId)
-      const projectSnap = await getDoc(projectRef)
+    Object.keys(project_fields).map(async (project_id) => {
+      const project_ref = doc(db, "projects", project_id)
+      const project_snap = await getDoc(project_ref)
 
-      if (projectSnap.exists()) {
-        const data = projectSnap.data()
-        const project = projectFields[projectId]
+      if (!project_snap.exists()) return
 
-        project.title.value = data.title || ""
-        project.category.value = data.category || ""
-        project.description.value = data.description || ""
-        project.link.value = data.link || ""
-      }
+      const data = project_snap.data()
+      const project = project_fields[project_id]
+
+      project.title.value = data.title || ""
+      project.category.value = data.category || ""
+      project.description.value = data.description || ""
+      project.link.value = data.link || ""
     })
   )
 }
 
-async function saveSiteContent() {
-  const siteRef = doc(db, "siteContent", "main")
-
-  const siteData = {
-    heroEyebrow: fields.heroEyebrow.value.trim(),
-    heroTitle: fields.heroTitle.value.trim(),
-    heroText: fields.heroText.value.trim(),
-    aboutText: fields.aboutText.value.trim(),
-    email: fields.email.value.trim(),
-    linkedin: fields.linkedin.value.trim(),
-    github: fields.github.value.trim(),
-    academiaText: fields.academiaText.value.trim(),
-    workText: fields.workText.value.trim(),
-    awardsText: fields.awardsText.value.trim(),
-    updatedAt: new Date().toISOString()
-  }
-
-  await setDoc(siteRef, siteData, { merge: true })
-
-  const projectSaves = Object.entries(projectFields).map(
-    async ([projectId, project]) => {
-      const projectRef = doc(db, "projects", projectId)
-
-      const projectData = {
-        title: project.title.value.trim(),
-        category: project.category.value.trim(),
-        description: project.description.value.trim(),
-        link: project.link.value.trim(),
-        updatedAt: new Date().toISOString()
-      }
-
-      await setDoc(projectRef, projectData, { merge: true })
-    }
+async function save_site_content() {
+  await setDoc(
+    doc(db, "siteContent", "main"),
+    {
+      title: fields.title.value.trim(),
+      subtitle: fields.subtitle.value.trim(),
+      intro: fields.intro.value.trim(),
+      about: fields.about.value.trim(),
+      academia: fields.academia.value.trim(),
+      work: fields.work.value.trim(),
+      awards: fields.awards.value.trim(),
+      email: fields.email.value.trim(),
+      linkedin: fields.linkedin.value.trim(),
+      github: fields.github.value.trim(),
+      instagram: fields.instagram.value.trim()
+    },
+    { merge: true }
   )
 
-  await Promise.all(projectSaves)
+  await Promise.all(
+    Object.entries(project_fields).map(async ([project_id, project]) => {
+      await setDoc(
+        doc(db, "projects", project_id),
+        {
+          title: project.title.value.trim(),
+          category: project.category.value.trim(),
+          description: project.description.value.trim(),
+          link: project.link.value.trim()
+        },
+        { merge: true }
+      )
+    })
+  )
 }
 
-if (loginBtn) {
-  loginBtn.addEventListener("click", async () => {
-    try {
-      const result = await signInWithPopup(auth, provider)
-      const user = result.user
+login_btn.addEventListener("click", async () => {
+  try {
+    const result = await signInWithPopup(auth, provider)
+    const user = result.user
 
-      if (user.email !== allowedAdminEmail) {
-        await signOut(auth)
-        authStatus.textContent = "This account is not allowed"
-        return
-      }
-
-      saveMessage.textContent = "Signed in"
-    } catch (error) {
-      console.error("Login error:", error)
-      authStatus.textContent = "Sign in failed"
-    }
-  })
-}
-
-if (logoutBtn) {
-  logoutBtn.addEventListener("click", async () => {
-    try {
+    if (user.email !== allowed_admin_email) {
       await signOut(auth)
-      clearForm()
-      saveMessage.textContent = "Signed out"
-    } catch (error) {
-      console.error("Logout error:", error)
-      authStatus.textContent = "Sign out failed"
-    }
-  })
-}
-
-if (form) {
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault()
-
-    const user = auth.currentUser
-
-    if (!user) {
-      saveMessage.textContent = "You must sign in first"
+      auth_status.textContent = "This account is not allowed"
       return
     }
 
-    if (user.email !== allowedAdminEmail) {
-      saveMessage.textContent = "You are not allowed to save"
-      return
-    }
+    set_logged_in_view(user)
+    await load_site_content()
+    save_message.textContent = "Signed in"
+  } catch (error) {
+    console.error("Login error:", error)
+    auth_status.textContent = error.message || "Sign in failed"
+  }
+})
 
-    try {
-      saveMessage.textContent = "Saving..."
-      await saveSiteContent()
-      saveMessage.textContent = "Changes saved"
-    } catch (error) {
-      console.error("Save error:", error)
-      saveMessage.textContent = "Save failed"
-    }
-  })
-}
+logout_btn.addEventListener("click", async () => {
+  try {
+    await signOut(auth)
+    save_message.textContent = "Signed out"
+  } catch (error) {
+    console.error("Logout error:", error)
+    auth_status.textContent = "Sign out failed"
+  }
+})
 
-onAuthStateChanged(auth, async (user) => {
+form.addEventListener("submit", async (event) => {
+  event.preventDefault()
+
+  const user = auth.currentUser
+
   if (!user) {
-    setLoggedOutView()
+    save_message.textContent = "You must sign in first"
     return
   }
 
-  if (user.email !== allowedAdminEmail) {
-    await signOut(auth)
-    setLoggedOutView()
-    authStatus.textContent = "This account is not allowed"
+  if (user.email !== allowed_admin_email) {
+    save_message.textContent = "You are not allowed to save"
     return
   }
 
   try {
-    setLoggedInView(user)
-    await loadSiteContent()
-    saveMessage.textContent = "Content loaded"
+    save_message.textContent = "Saving..."
+    await save_site_content()
+    save_message.textContent = "Changes saved"
   } catch (error) {
-    console.error("Load error:", error)
-    saveMessage.textContent = "Could not load content"
+    console.error("Save error:", error)
+    save_message.textContent = "Save failed"
   }
 })
 
-setLoggedOutView()
+onAuthStateChanged(auth, async (user) => {
+  if (!user) {
+    set_logged_out_view()
+    return
+  }
+
+  if (user.email !== allowed_admin_email) {
+    await signOut(auth)
+    set_logged_out_view()
+    auth_status.textContent = "This account is not allowed"
+    return
+  }
+
+  try {
+    set_logged_in_view(user)
+    await load_site_content()
+    save_message.textContent = "Content loaded"
+  } catch (error) {
+    console.error("Load error:", error)
+    save_message.textContent = "Could not load content"
+  }
+})
+
+set_logged_out_view()
