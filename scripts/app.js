@@ -1,57 +1,161 @@
 import { db } from "./firebase-config.js"
 import {
   doc,
-  getDoc
+  getDoc,
+  collection,
+  getDocs
 } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js"
 
-async function loadSiteContent() {
-  const siteRef = doc(db, "siteContent", "main")
-  const siteSnap = await getDoc(siteRef)
-
-  if (siteSnap.exists()) {
-    const data = siteSnap.data()
-
-    document.getElementById("title").textContent = data.title || ""
-    document.getElementById("subtitle").textContent = data.subtitle || ""
-    document.getElementById("intro").textContent = data.intro || ""
-    document.getElementById("about").textContent = data.about || ""
-    document.getElementById("academia").textContent = data.academia || ""
-    document.getElementById("work").textContent = data.work || ""
-    document.getElementById("awards").textContent = data.awards || ""
-    document.getElementById("email").textContent = data.email || ""
-    document.getElementById("linkedin").textContent = data.linkedin || ""
-    document.getElementById("github").textContent = data.github || ""
-    document.getElementById("instagram").textContent = data.instagram || ""
-  }
+function set_text(id, value) {
+  const el = document.getElementById(id)
+  if (el) el.textContent = value || ""
 }
 
-async function loadProject(projectId) {
-  const projectRef = doc(db, "projects", projectId)
-  const projectSnap = await getDoc(projectRef)
+function escape_html(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
 
-  if (projectSnap.exists()) {
-    const data = projectSnap.data()
+async function load_site_content() {
+  const site_ref = doc(db, "siteContent", "main")
+  const site_snap = await getDoc(site_ref)
 
-    document.getElementById(`title_${projectId}`).textContent = data.title || ""
-    document.getElementById(`category_${projectId}`).textContent = data.category || ""
-    document.getElementById(`description_${projectId}`).textContent = data.description || ""
+  if (!site_snap.exists()) return
 
-    const linkEl = document.getElementById(`link_${projectId}`)
-    linkEl.textContent = data.link ? "View Project" : "Coming Soon"
-    linkEl.href = data.link || "#"
+  const data = site_snap.data()
+
+  set_text("title", data.title)
+  set_text("subtitle", data.subtitle)
+  set_text("intro", data.intro)
+  set_text("about", data.about)
+  set_text("academia", data.academia)
+  set_text("work", data.work)
+  set_text("awards", data.awards)
+  set_text("email", data.email)
+  set_text("linkedin", data.linkedin)
+  set_text("github", data.github)
+  set_text("instagram", data.instagram)
+}
+
+async function load_projects() {
+  const grid = document.getElementById("projects_grid")
+  if (!grid) return
+
+  const snap = await getDocs(collection(db, "projects"))
+
+  const items = snap.docs
+    .map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item) => item.is_visible !== false)
+    .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999))
+
+  if (!items.length) {
+    grid.innerHTML = `
+      <article class="project_card">
+        <h3>No projects yet</h3>
+        <p>Projects you add in the dashboard will show up here.</p>
+      </article>
+    `
+    return
+  }
+
+  grid.innerHTML = items.map((item) => {
+    const link = item.link && item.link.trim() ? item.link.trim() : "#"
+    const title = escape_html(item.title || "Untitled Project")
+    const category = escape_html(item.category || "Project")
+    const description = escape_html(item.description || "")
+    const button_text = link === "#" ? "Coming Soon" : "View Project"
+
+    return `
+      <article class="project_card">
+        <span class="project_tag">${category}</span>
+        <h3>${title}</h3>
+        <p>${description}</p>
+        <a href="${link}" class="project_link" target="_blank" rel="noopener noreferrer">${button_text}</a>
+      </article>
+    `
+  }).join("")
+}
+
+async function load_posts() {
+  const grid = document.getElementById("posts_grid")
+  if (!grid) return
+
+  const snap = await getDocs(collection(db, "blogPost"))
+
+  const items = snap.docs
+    .map((item) => ({ id: item.id, ...item.data() }))
+    .filter((item) => item.is_published !== false)
+    .sort((a, b) => (a.sort_order ?? 9999) - (b.sort_order ?? 9999))
+
+  if (!items.length) {
+    grid.innerHTML = `
+      <article class="project_card">
+        <h3>No posts yet</h3>
+        <p>Posts you add in the dashboard will show up here.</p>
+      </article>
+    `
+    return
+  }
+
+  grid.innerHTML = items.map((item) => {
+    const title = escape_html(item.title || "Untitled Post")
+    const excerpt = escape_html(item.excerpt || item.content || "")
+    const short_excerpt = excerpt.length > 180 ? `${excerpt.slice(0, 180)}...` : excerpt
+
+    return `
+      <article class="project_card">
+        <span class="project_tag">Post</span>
+        <h3>${title}</h3>
+        <p>${short_excerpt}</p>
+      </article>
+    `
+  }).join("")
+}
+
+async function load_resume() {
+  const wrap = document.getElementById("current_resume_wrap")
+  const text = document.getElementById("current_resume_text")
+  const link = document.getElementById("current_resume_link")
+
+  if (!wrap || !text || !link) return
+
+  const snap = await getDocs(collection(db, "resumes"))
+
+  const items = snap.docs.map((item) => ({ id: item.id, ...item.data() }))
+  const current = items.find((item) => item.is_current) || items[0]
+
+  if (!current) {
+    text.textContent = "No resume available yet."
+    link.style.display = "none"
+    return
+  }
+
+  text.textContent = current.title || current.file_name || "Current Resume"
+  link.href = current.file_url || "#"
+  link.textContent = current.file_name ? `Open ${current.file_name}` : "View Resume"
+
+  if (!current.file_url) {
+    link.style.display = "none"
+  } else {
+    link.style.display = "inline-block"
   }
 }
 
 async function init() {
-  await loadSiteContent()
-
-  await Promise.all([
-    loadProject("nsportfolio_game"),
-    loadProject("aws_asana_backup"),
-    loadProject("figma"),
-    loadProject("coding"),
-    loadProject("snowflake")
-  ])
+  try {
+    await Promise.all([
+      load_site_content(),
+      load_projects(),
+      load_posts(),
+      load_resume()
+    ])
+  } catch (error) {
+    console.error("Error loading site content:", error)
+  }
 }
 
 init()
