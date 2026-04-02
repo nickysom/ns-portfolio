@@ -1,405 +1,257 @@
+<!-- admin.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin Panel | Nicky Portfolio</title>
-  <link rel="stylesheet" href="styles/admin.css" />
+  <link rel="stylesheet" href="styles/styles.css" />
 </head>
 <body>
-  <header class="admin-header">
-    <div class="container admin-header-inner">
-      <a href="index.html" class="admin-logo">Nicky Admin</a>
-
-      <nav class="admin-nav">
+  <header class="admin_header">
+    <div class="container admin_header_inner">
+      <a href="index.html" class="admin_logo">Nicky Admin</a>
+      <nav class="admin_nav">
         <a href="index.html">View Site</a>
       </nav>
     </div>
   </header>
 
-  <main class="admin-main">
-    <section class="admin-hero">
+  <main class="admin_main">
+    <section class="admin_banner">
       <div class="container">
-        <p class="admin-eyebrow">Portfolio Content Manager</p>
+        <p class="admin_label">Portfolio Content Manager</p>
         <h1>Edit your website content</h1>
-        <p class="admin-intro">
-          Sign in, update your bio, project details, links, and section content.
+        <p class="admin_intro">
+          Sign in, update your site content, and save changes without editing the HTML directly.
         </p>
       </div>
     </section>
 
-    <section class="auth-section">
+    <section class="auth_section">
       <div class="container">
         <div class="panel">
           <h2>Account</h2>
-          <p id="auth-status">Not signed in</p>
+          <p id="auth_status">Not signed in</p>
 
-          <div class="auth-actions">
-            <button id="login-btn" type="button">Sign in with Google</button>
-            <button id="logout-btn" type="button">Sign out</button>
+          <div class="auth_actions">
+            <button id="login_btn" type="button">Sign in with Google</button>
+            <button id="logout_btn" type="button">Sign out</button>
           </div>
         </div>
       </div>
     </section>
 
-    <section class="content-section" id="admin-content">
+    <section class="content_section" id="admin_content">
       <div class="container">
-        <form id="site-content-form" class="admin-form">
+        <form id="site_content_form" class="admin_form">
           <div class="panel">
-            <h2>Homepage Content</h2>
+            <h2>Homepage</h2>
 
-            <div class="form-group">
-              <label for="hero-eyebrow">Hero Eyebrow</label>
-              <input
-                type="text"
-                id="hero-eyebrow"
-                name="heroEyebrow"
-                placeholder="Student • Developer • Builder"
-              />
+            <div class="form_group">
+              <label for="title_input">Title</label>
+              <input type="text" id="title_input" name="title" placeholder="Hi, I’m Nicky" />
             </div>
 
-            <div class="form-group">
-              <label for="hero-title">Hero Title</label>
-              <input
-                type="text"
-                id="hero-title"
-                name="heroTitle"
-                placeholder="Hi, I’m Nicky"
-              />
+            <div class="form_group">
+              <label for="subtitle_input">Subtitle</label>
+              <input type="text" id="subtitle_input" name="subtitle" placeholder="Student • Developer • Builder" />
             </div>
 
-            <div class="form-group">
-              <label for="hero-text">Hero Description</label>
-              <textarea
-                id="hero-text"
-                name="heroText"
-                rows="4"
-                placeholder="Welcome to my portfolio..."
-              ></textarea>
+            <div class="form_group">
+              <label for="intro_input">Intro</label>
+              <textarea id="intro_input" name="intro" rows="4" placeholder="Welcome to my portfolio."></textarea>
             </div>
           </div>
 
           <div class="panel">
-            <h2>About Me</h2>
+            <h2>About</h2>
 
-            <div class="form-group">
-              <label for="about-text">About Text</label>
-              <textarea
-                id="about-text"
-                name="aboutText"
-                rows="6"
-                placeholder="Write your bio here"
-              ></textarea>
-            </div>
-          </div>
-
-          <div class="panel">
-            <h2>Contact</h2>
-
-            <div class="form-group">
-              <label for="contact-email">Email</label>
-              <input
-                type="email"
-                id="contact-email"
-                name="email"
-                placeholder="you@example.com"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="contact-linkedin">LinkedIn</label>
-              <input
-                type="text"
-                id="contact-linkedin"
-                name="linkedin"
-                placeholder="https://linkedin.com/in/yourname"
-              />
-            </div>
-
-            <div class="form-group">
-              <label for="contact-github">GitHub</label>
-              <input
-                type="text"
-                id="contact-github"
-                name="github"
-                placeholder="https://github.com/yourname"
-              />
+            <div class="form_group">
+              <label for="about_input">About</label>
+              <textarea id="about_input" name="about" rows="6" placeholder="Write your bio here"></textarea>
             </div>
           </div>
 
           <div class="panel">
             <h2>Academia</h2>
 
-            <div class="form-group">
-              <label for="academia-text">Academia Section</label>
-              <textarea
-                id="academia-text"
-                name="academiaText"
-                rows="5"
-                placeholder="Coursework, research, certifications..."
-              ></textarea>
+            <div class="form_group">
+              <label for="academia_input">Academia</label>
+              <textarea id="academia_input" name="academia" rows="5" placeholder="Coursework, research, certifications"></textarea>
             </div>
           </div>
 
           <div class="panel">
             <h2>Work</h2>
 
-            <div class="form-group">
-              <label for="work-text">Work Section</label>
-              <textarea
-                id="work-text"
-                name="workText"
-                rows="5"
-                placeholder="Roles, internships, responsibilities..."
-              ></textarea>
+            <div class="form_group">
+              <label for="work_input">Work</label>
+              <textarea id="work_input" name="work" rows="5" placeholder="Roles, internships, responsibilities"></textarea>
             </div>
           </div>
 
           <div class="panel">
             <h2>Awards</h2>
 
-            <div class="form-group">
-              <label for="awards-text">Awards Section</label>
-              <textarea
-                id="awards-text"
-                name="awardsText"
-                rows="5"
-                placeholder="Awards, honors, achievements..."
-              ></textarea>
+            <div class="form_group">
+              <label for="awards_input">Awards</label>
+              <textarea id="awards_input" name="awards" rows="5" placeholder="Awards and achievements"></textarea>
+            </div>
+          </div>
+
+          <div class="panel">
+            <h2>Contact</h2>
+
+            <div class="form_group">
+              <label for="email_input">Email</label>
+              <input type="email" id="email_input" name="email" placeholder="you@email.com" />
+            </div>
+
+            <div class="form_group">
+              <label for="linkedin_input">LinkedIn</label>
+              <input type="text" id="linkedin_input" name="linkedin" placeholder="your_linkedin" />
+            </div>
+
+            <div class="form_group">
+              <label for="github_input">GitHub</label>
+              <input type="text" id="github_input" name="github" placeholder="your_github" />
+            </div>
+
+            <div class="form_group">
+              <label for="instagram_input">Instagram</label>
+              <input type="text" id="instagram_input" name="instagram" placeholder="your_instagram" />
             </div>
           </div>
 
           <div class="panel">
             <h2>Projects</h2>
 
-            <div class="project-editor" data-project-id="nsportfolio-game">
+            <div class="project_editor">
               <h3>NSPortfolio Game</h3>
 
-              <div class="form-group">
-                <label for="project-1-title">Project Title</label>
-                <input
-                  type="text"
-                  id="project-1-title"
-                  name="project1Title"
-                  placeholder="NSPortfolio Game"
-                />
+              <div class="form_group">
+                <label for="nsportfolio_game_title">Title</label>
+                <input type="text" id="nsportfolio_game_title" placeholder="NSPortfolio Game" />
               </div>
 
-              <div class="form-group">
-                <label for="project-1-category">Category</label>
-                <input
-                  type="text"
-                  id="project-1-category"
-                  name="project1Category"
-                  placeholder="Game Development"
-                />
+              <div class="form_group">
+                <label for="nsportfolio_game_category">Category</label>
+                <input type="text" id="nsportfolio_game_category" placeholder="Game Development" />
               </div>
 
-              <div class="form-group">
-                <label for="project-1-description">Description</label>
-                <textarea
-                  id="project-1-description"
-                  name="project1Description"
-                  rows="4"
-                  placeholder="Describe this project"
-                ></textarea>
+              <div class="form_group">
+                <label for="nsportfolio_game_description">Description</label>
+                <textarea id="nsportfolio_game_description" rows="4" placeholder="Describe this project"></textarea>
               </div>
 
-              <div class="form-group">
-                <label for="project-1-link">Project Link</label>
-                <input
-                  type="text"
-                  id="project-1-link"
-                  name="project1Link"
-                  placeholder="https://..."
-                />
+              <div class="form_group">
+                <label for="nsportfolio_game_link">Link</label>
+                <input type="text" id="nsportfolio_game_link" placeholder="https://your_link.com" />
               </div>
             </div>
 
-            <div class="project-editor" data-project-id="aws-asana-backup">
+            <div class="project_editor">
               <h3>AWS Asana Backup Solution</h3>
 
-              <div class="form-group">
-                <label for="project-2-title">Project Title</label>
-                <input
-                  type="text"
-                  id="project-2-title"
-                  name="project2Title"
-                  placeholder="AWS Asana Backup Solution"
-                />
+              <div class="form_group">
+                <label for="aws_asana_backup_title">Title</label>
+                <input type="text" id="aws_asana_backup_title" placeholder="AWS Asana Backup Solution" />
               </div>
 
-              <div class="form-group">
-                <label for="project-2-category">Category</label>
-                <input
-                  type="text"
-                  id="project-2-category"
-                  name="project2Category"
-                  placeholder="Cloud / Automation"
-                />
+              <div class="form_group">
+                <label for="aws_asana_backup_category">Category</label>
+                <input type="text" id="aws_asana_backup_category" placeholder="Cloud / Automation" />
               </div>
 
-              <div class="form-group">
-                <label for="project-2-description">Description</label>
-                <textarea
-                  id="project-2-description"
-                  name="project2Description"
-                  rows="4"
-                  placeholder="Describe this project"
-                ></textarea>
+              <div class="form_group">
+                <label for="aws_asana_backup_description">Description</label>
+                <textarea id="aws_asana_backup_description" rows="4" placeholder="Describe this project"></textarea>
               </div>
 
-              <div class="form-group">
-                <label for="project-2-link">Project Link</label>
-                <input
-                  type="text"
-                  id="project-2-link"
-                  name="project2Link"
-                  placeholder="https://..."
-                />
+              <div class="form_group">
+                <label for="aws_asana_backup_link">Link</label>
+                <input type="text" id="aws_asana_backup_link" placeholder="https://your_link.com" />
               </div>
             </div>
 
-            <div class="project-editor" data-project-id="figma-projects">
-              <h3>Figma</h3>
+            <div class="project_editor">
+              <h3>Figma Projects</h3>
 
-              <div class="form-group">
-                <label for="project-3-title">Project Title</label>
-                <input
-                  type="text"
-                  id="project-3-title"
-                  name="project3Title"
-                  placeholder="Figma"
-                />
+              <div class="form_group">
+                <label for="figma_title">Title</label>
+                <input type="text" id="figma_title" placeholder="Figma Projects" />
               </div>
 
-              <div class="form-group">
-                <label for="project-3-category">Category</label>
-                <input
-                  type="text"
-                  id="project-3-category"
-                  name="project3Category"
-                  placeholder="UI / UX Design"
-                />
+              <div class="form_group">
+                <label for="figma_category">Category</label>
+                <input type="text" id="figma_category" placeholder="UI / UX Design" />
               </div>
 
-              <div class="form-group">
-                <label for="project-3-description">Description</label>
-                <textarea
-                  id="project-3-description"
-                  name="project3Description"
-                  rows="4"
-                  placeholder="Describe this project"
-                ></textarea>
+              <div class="form_group">
+                <label for="figma_description">Description</label>
+                <textarea id="figma_description" rows="4" placeholder="Describe this project"></textarea>
               </div>
 
-              <div class="form-group">
-                <label for="project-3-link">Project Link</label>
-                <input
-                  type="text"
-                  id="project-3-link"
-                  name="project3Link"
-                  placeholder="https://..."
-                />
+              <div class="form_group">
+                <label for="figma_link">Link</label>
+                <input type="text" id="figma_link" placeholder="https://your_link.com" />
               </div>
             </div>
 
-            <div class="project-editor" data-project-id="coding-projects">
-              <h3>Coding</h3>
+            <div class="project_editor">
+              <h3>Coding Projects</h3>
 
-              <div class="form-group">
-                <label for="project-4-title">Project Title</label>
-                <input
-                  type="text"
-                  id="project-4-title"
-                  name="project4Title"
-                  placeholder="Coding"
-                />
+              <div class="form_group">
+                <label for="coding_title">Title</label>
+                <input type="text" id="coding_title" placeholder="Coding Projects" />
               </div>
 
-              <div class="form-group">
-                <label for="project-4-category">Category</label>
-                <input
-                  type="text"
-                  id="project-4-category"
-                  name="project4Category"
-                  placeholder="Software Development"
-                />
+              <div class="form_group">
+                <label for="coding_category">Category</label>
+                <input type="text" id="coding_category" placeholder="Software Development" />
               </div>
 
-              <div class="form-group">
-                <label for="project-4-description">Description</label>
-                <textarea
-                  id="project-4-description"
-                  name="project4Description"
-                  rows="4"
-                  placeholder="Describe this project"
-                ></textarea>
+              <div class="form_group">
+                <label for="coding_description">Description</label>
+                <textarea id="coding_description" rows="4" placeholder="Describe this project"></textarea>
               </div>
 
-              <div class="form-group">
-                <label for="project-4-link">Project Link</label>
-                <input
-                  type="text"
-                  id="project-4-link"
-                  name="project4Link"
-                  placeholder="https://..."
-                />
+              <div class="form_group">
+                <label for="coding_link">Link</label>
+                <input type="text" id="coding_link" placeholder="https://your_link.com" />
               </div>
             </div>
 
-            <div class="project-editor" data-project-id="snowflake-project">
+            <div class="project_editor">
               <h3>Big Data Analytics with Snowflake</h3>
 
-              <div class="form-group">
-                <label for="project-5-title">Project Title</label>
-                <input
-                  type="text"
-                  id="project-5-title"
-                  name="project5Title"
-                  placeholder="Big Data Analytics with Snowflake"
-                />
+              <div class="form_group">
+                <label for="snowflake_title">Title</label>
+                <input type="text" id="snowflake_title" placeholder="Big Data Analytics with Snowflake" />
               </div>
 
-              <div class="form-group">
-                <label for="project-5-category">Category</label>
-                <input
-                  type="text"
-                  id="project-5-category"
-                  name="project5Category"
-                  placeholder="Data Analytics"
-                />
+              <div class="form_group">
+                <label for="snowflake_category">Category</label>
+                <input type="text" id="snowflake_category" placeholder="Data Analytics" />
               </div>
 
-              <div class="form-group">
-                <label for="project-5-description">Description</label>
-                <textarea
-                  id="project-5-description"
-                  name="project5Description"
-                  rows="4"
-                  placeholder="Describe this project"
-                ></textarea>
+              <div class="form_group">
+                <label for="snowflake_description">Description</label>
+                <textarea id="snowflake_description" rows="4" placeholder="Describe this project"></textarea>
               </div>
 
-              <div class="form-group">
-                <label for="project-5-link">Project Link</label>
-                <input
-                  type="text"
-                  id="project-5-link"
-                  name="project5Link"
-                  placeholder="https://..."
-                />
+              <div class="form_group">
+                <label for="snowflake_link">Link</label>
+                <input type="text" id="snowflake_link" placeholder="https://your_link.com" />
               </div>
             </div>
           </div>
 
           <div class="panel">
             <h2>Save Changes</h2>
-            <p id="save-message">No changes saved yet</p>
-
-            <div class="form-actions">
-              <button id="save-site-btn" type="submit">Save Website Content</button>
-            </div>
+            <p id="save_message">No changes saved yet</p>
+            <button id="save_button" type="submit">Save Website Content</button>
           </div>
         </form>
       </div>
