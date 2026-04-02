@@ -18,6 +18,13 @@ import {
 
 const allowed_admin_email = "nickysom@icloud.com"
 
+const COLLECTIONS = {
+  site: "siteContent",
+  projects: "projects",
+  posts: "blogPost",
+  resumes: "resumes"
+}
+
 const auth_status = document.getElementById("auth_status")
 const login_btn = document.getElementById("login_btn")
 const logout_btn = document.getElementById("logout_btn")
@@ -104,6 +111,13 @@ function slugify(value) {
     .replace(/^_+|_+$/g, "")
 }
 
+function get_collection_name(type) {
+  if (type === "projects") return COLLECTIONS.projects
+  if (type === "posts") return COLLECTIONS.posts
+  if (type === "resumes") return COLLECTIONS.resumes
+  return type
+}
+
 function set_logged_out_view() {
   auth_status.textContent = "Not signed in"
   admin_content.style.display = "none"
@@ -144,7 +158,7 @@ function render_list(container, items, type) {
 
   container.innerHTML = items
     .map((item) => {
-      const visible_text =
+      const status_text =
         type === "projects"
           ? item.is_visible ? "Visible" : "Hidden"
           : type === "posts"
@@ -156,7 +170,7 @@ function render_list(container, items, type) {
           <div class="item_card_top">
             <div>
               <h4>${item.title || "Untitled"}</h4>
-              <p>${visible_text}</p>
+              <p>${status_text}</p>
             </div>
             <div class="item_actions">
               <button type="button" data_action="edit" data_type="${type}" data_id="${item.id}">Edit</button>
@@ -243,7 +257,7 @@ function fill_resume_form(item) {
 }
 
 async function load_site_content() {
-  const site_ref = doc(db, "site_content", "main")
+  const site_ref = doc(db, COLLECTIONS.site, "main")
   const site_snap = await getDoc(site_ref)
 
   if (!site_snap.exists()) return
@@ -265,9 +279,9 @@ async function load_collection(name) {
 async function load_dashboard_data() {
   await load_site_content()
 
-  projects_cache = await load_collection("projects")
-  posts_cache = await load_collection("posts")
-  resumes_cache = await load_collection("resumes")
+  projects_cache = await load_collection(COLLECTIONS.projects)
+  posts_cache = await load_collection(COLLECTIONS.posts)
+  resumes_cache = await load_collection(COLLECTIONS.resumes)
 
   render_list(projects_list, projects_cache, "projects")
   render_list(posts_list, posts_cache, "posts")
@@ -279,7 +293,7 @@ site_form.addEventListener("submit", async (event) => {
   event.preventDefault()
 
   await setDoc(
-    doc(db, "site_content", "main"),
+    doc(db, COLLECTIONS.site, "main"),
     {
       title: site_fields.title.value.trim(),
       subtitle: site_fields.subtitle.value.trim(),
@@ -318,10 +332,10 @@ project_form.addEventListener("submit", async (event) => {
 
   if (!project_fields.id.value) {
     payload.created_at = serverTimestamp()
-    await addDoc(collection(db, "projects"), payload)
+    await addDoc(collection(db, COLLECTIONS.projects), payload)
     set_message("Project created")
   } else {
-    await updateDoc(doc(db, "projects", project_fields.id.value), payload)
+    await updateDoc(doc(db, COLLECTIONS.projects, project_fields.id.value), payload)
     set_message("Project updated")
   }
 
@@ -345,10 +359,10 @@ post_form.addEventListener("submit", async (event) => {
 
   if (!post_fields.id.value) {
     payload.created_at = serverTimestamp()
-    await addDoc(collection(db, "posts"), payload)
+    await addDoc(collection(db, COLLECTIONS.posts), payload)
     set_message("Post created")
   } else {
-    await updateDoc(doc(db, "posts", post_fields.id.value), payload)
+    await updateDoc(doc(db, COLLECTIONS.posts, post_fields.id.value), payload)
     set_message("Post updated")
   }
 
@@ -359,10 +373,10 @@ post_form.addEventListener("submit", async (event) => {
 resume_form.addEventListener("submit", async (event) => {
   event.preventDefault()
 
-  if (resume_fields.is_current.checked) {
+  if (resume_fields.is_current.checked && resumes_cache.length) {
     await Promise.all(
       resumes_cache.map((item) =>
-        updateDoc(doc(db, "resumes", item.id), { is_current: false })
+        updateDoc(doc(db, COLLECTIONS.resumes, item.id), { is_current: false })
       )
     )
   }
@@ -377,10 +391,10 @@ resume_form.addEventListener("submit", async (event) => {
 
   if (!resume_fields.id.value) {
     payload.created_at = serverTimestamp()
-    await addDoc(collection(db, "resumes"), payload)
+    await addDoc(collection(db, COLLECTIONS.resumes), payload)
     set_message("Resume created")
   } else {
-    await updateDoc(doc(db, "resumes", resume_fields.id.value), payload)
+    await updateDoc(doc(db, COLLECTIONS.resumes, resume_fields.id.value), payload)
     set_message("Resume updated")
   }
 
@@ -434,7 +448,8 @@ document.addEventListener("click", async (event) => {
     const ok = window.confirm("Delete this item?")
     if (!ok) return
 
-    await deleteDoc(doc(db, type, id))
+    const collection_name = get_collection_name(type)
+    await deleteDoc(doc(db, collection_name, id))
     set_message("Item deleted")
     await load_dashboard_data()
   }
