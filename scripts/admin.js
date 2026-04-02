@@ -1,4 +1,4 @@
-import { auth, db, provider } from "./firebase_config.js"
+import { auth, db, provider } from "./firebase-config.js"
 import {
   signInWithPopup,
   signOut,
