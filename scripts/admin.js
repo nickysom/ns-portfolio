@@ -28,9 +28,6 @@ const site_fields = {
   subtitle: document.getElementById("subtitle_input"),
   intro: document.getElementById("intro_input"),
   about: document.getElementById("about_input"),
-  academia: document.getElementById("academia_input"),
-  work: document.getElementById("work_input"),
-  awards: document.getElementById("awards_input"),
   email: document.getElementById("email_input"),
   linkedin: document.getElementById("linkedin_input"),
   github: document.getElementById("github_input"),
@@ -87,9 +84,54 @@ const resume_fields = {
 };
 const reset_resume_btn = document.getElementById("reset_resume_btn");
 
+const work_form = document.getElementById("work_form");
+const work_fields = {
+  id: document.getElementById("work_id"),
+  title: document.getElementById("work_title"),
+  subtitle: document.getElementById("work_subtitle"),
+  organization: document.getElementById("work_organization"),
+  date_range: document.getElementById("work_date_range"),
+  description: document.getElementById("work_description"),
+  link: document.getElementById("work_link"),
+};
+const work_list = document.getElementById("work_list");
+const new_work_btn = document.getElementById("new_work_btn");
+const reset_work_btn = document.getElementById("reset_work_btn");
+
+const academia_form = document.getElementById("academia_form");
+const academia_fields = {
+  id: document.getElementById("academia_id"),
+  title: document.getElementById("academia_title"),
+  subtitle: document.getElementById("academia_subtitle"),
+  organization: document.getElementById("academia_organization"),
+  date_range: document.getElementById("academia_date_range"),
+  description: document.getElementById("academia_description"),
+  link: document.getElementById("academia_link"),
+};
+const academia_list = document.getElementById("academia_list");
+const new_academia_btn = document.getElementById("new_academia_btn");
+const reset_academia_btn = document.getElementById("reset_academia_btn");
+
+const awards_form = document.getElementById("awards_form");
+const awards_fields = {
+  id: document.getElementById("awards_id"),
+  title: document.getElementById("awards_title"),
+  subtitle: document.getElementById("awards_subtitle"),
+  organization: document.getElementById("awards_organization"),
+  date_range: document.getElementById("awards_date_range"),
+  description: document.getElementById("awards_description"),
+  link: document.getElementById("awards_link"),
+};
+const awards_list = document.getElementById("awards_list");
+const new_awards_btn = document.getElementById("new_awards_btn");
+const reset_awards_btn = document.getElementById("reset_awards_btn");
+
 let projects_cache = [];
 let posts_cache = [];
 let resumes_cache = [];
+let work_cache = [];
+let academia_cache = [];
+let awards_cache = [];
 let logout_timer = null;
 
 const slugify = (value) =>
@@ -396,6 +438,17 @@ const normalize_resumes = (items = []) =>
     is_current: !!item.is_current,
   }));
 
+const normalize_entries = (items = [], id_key) =>
+  items.map((item) => ({
+    id: item[id_key] || "",
+    title: item.title || "",
+    subtitle: item.subtitle || "",
+    organization: item.organization || "",
+    date_range: item.date_range || "",
+    description: item.description || "",
+    link: item.link || "",
+  }));
+
 const render_list = (container, items, type) => {
   if (!items.length) {
     container.innerHTML = `<div class='item_card'><p>No ${type} yet.</p></div>`;
@@ -406,16 +459,12 @@ const render_list = (container, items, type) => {
     .map((item) => {
       const status_text =
         type === "projects"
-          ? item.is_visible
-            ? "Visible"
-            : "Hidden"
+          ? item.is_visible ? "Visible" : "Hidden"
           : type === "posts"
-            ? item.is_published
-              ? "Published"
-              : "Draft"
-            : item.is_current
-              ? "Current"
-              : "Archived";
+          ? item.is_published ? "Published" : "Draft"
+          : type === "resumes"
+          ? item.is_current ? "Current" : "Archived"
+          : item.date_range || "";
 
       return `
         <div class='item_card'>
@@ -473,6 +522,16 @@ const clear_resume_form = () => {
   resume_fields.is_current.checked = false;
 };
 
+const clear_entry_form = (fields) => {
+  fields.id.value = "";
+  fields.title.value = "";
+  fields.subtitle.value = "";
+  fields.organization.value = "";
+  fields.date_range.value = "";
+  fields.description.value = "";
+  fields.link.value = "";
+};
+
 const fill_project_form = (item) => {
   project_fields.id.value = item.id;
   project_fields.title.value = item.title || "";
@@ -508,6 +567,64 @@ const fill_resume_form = (item) => {
   switch_tab("resumes_tab");
 };
 
+const fill_entry_form = (fields, item, tab_id) => {
+  fields.id.value = item.id;
+  fields.title.value = item.title || "";
+  fields.subtitle.value = item.subtitle || "";
+  fields.organization.value = item.organization || "";
+  fields.date_range.value = item.date_range || "";
+  fields.description.value = item.description || "";
+  fields.link.value = item.link || "";
+  switch_tab(tab_id);
+};
+
+const save_entries = async (section_key, cache, id_key) => {
+  await api_put(section_key, {
+    id: section_key,
+    items: cache.map((entry) => ({
+      [id_key]: entry.id,
+      title: entry.title,
+      subtitle: entry.subtitle,
+      organization: entry.organization,
+      date_range: entry.date_range,
+      description: entry.description,
+      link: entry.link,
+    })),
+  });
+};
+
+const handle_entry_submit = async (event, fields, cache_ref, section_key, id_key) => {
+  event.preventDefault();
+
+  const id = fields.id.value || `${section_key}_${Date.now()}`;
+  const item = {
+    id,
+    title: fields.title.value.trim(),
+    subtitle: fields.subtitle.value.trim(),
+    organization: fields.organization.value.trim(),
+    date_range: fields.date_range.value.trim(),
+    description: fields.description.value.trim(),
+    link: fields.link.value.trim(),
+  };
+
+  const existing_index = cache_ref.findIndex((entry) => entry.id === id);
+  if (existing_index >= 0) {
+    cache_ref[existing_index] = item;
+  } else {
+    cache_ref.push(item);
+  }
+
+  try {
+    await save_entries(section_key, cache_ref, id_key);
+    clear_entry_form(fields);
+    set_message(existing_index >= 0 ? `${section_key} entry updated` : `${section_key} entry created`);
+    await load_dashboard_data();
+  } catch (error) {
+    console.error(error);
+    set_message(`Failed to save ${section_key} entry`);
+  }
+};
+
 const load_site_content = async () => {
   const data = await api_get("site");
 
@@ -522,6 +639,9 @@ const load_dashboard_data = async () => {
   const projects_data = await api_get("projects");
   const posts_data = await api_get("posts");
   const resumes_data = await api_get("resumes");
+  const work_data = await api_get("work");
+  const academia_data = await api_get("academia");
+  const awards_data = await api_get("awards");
 
   projects_cache = normalize_projects(projects_data.items || []).sort(
     (a, b) => a.sort_order - b.sort_order,
@@ -530,10 +650,16 @@ const load_dashboard_data = async () => {
     (a, b) => a.sort_order - b.sort_order,
   );
   resumes_cache = normalize_resumes(resumes_data.items || []);
+  work_cache = normalize_entries(work_data.items || [], "work_id");
+  academia_cache = normalize_entries(academia_data.items || [], "academia_id");
+  awards_cache = normalize_entries(awards_data.items || [], "awards_id");
 
   render_list(projects_list, projects_cache, "projects");
   render_list(posts_list, posts_cache, "posts");
   render_list(resumes_list, resumes_cache, "resumes");
+  render_list(work_list, work_cache, "work");
+  render_list(academia_list, academia_cache, "academia");
+  render_list(awards_list, awards_cache, "awards");
   update_counts();
 };
 
@@ -547,9 +673,6 @@ site_form.addEventListener("submit", async (event) => {
       subtitle: site_fields.subtitle.value.trim(),
       intro: site_fields.intro.value.trim(),
       about: site_fields.about.value.trim(),
-      academia: site_fields.academia.value.trim(),
-      work: site_fields.work.value.trim(),
-      awards: site_fields.awards.value.trim(),
       email: site_fields.email.value.trim(),
       linkedin: site_fields.linkedin.value.trim(),
       github: site_fields.github.value.trim(),
@@ -716,6 +839,18 @@ resume_form.addEventListener("submit", async (event) => {
   }
 });
 
+work_form.addEventListener("submit", (event) =>
+  handle_entry_submit(event, work_fields, work_cache, "work", "work_id")
+);
+
+academia_form.addEventListener("submit", (event) =>
+  handle_entry_submit(event, academia_fields, academia_cache, "academia", "academia_id")
+);
+
+awards_form.addEventListener("submit", (event) =>
+  handle_entry_submit(event, awards_fields, awards_cache, "awards", "awards_id")
+);
+
 new_project_btn.addEventListener("click", () => {
   clear_project_form();
   switch_tab("projects_tab");
@@ -731,9 +866,27 @@ new_resume_btn.addEventListener("click", () => {
   switch_tab("resumes_tab");
 });
 
+new_work_btn.addEventListener("click", () => {
+  clear_entry_form(work_fields);
+  switch_tab("work_tab");
+});
+
+new_academia_btn.addEventListener("click", () => {
+  clear_entry_form(academia_fields);
+  switch_tab("academia_tab");
+});
+
+new_awards_btn.addEventListener("click", () => {
+  clear_entry_form(awards_fields);
+  switch_tab("awards_tab");
+});
+
 reset_project_btn.addEventListener("click", clear_project_form);
 reset_post_btn.addEventListener("click", clear_post_form);
 reset_resume_btn.addEventListener("click", clear_resume_form);
+reset_work_btn.addEventListener("click", () => clear_entry_form(work_fields));
+reset_academia_btn.addEventListener("click", () => clear_entry_form(academia_fields));
+reset_awards_btn.addEventListener("click", () => clear_entry_form(awards_fields));
 
 document.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-action]");
@@ -743,26 +896,35 @@ document.addEventListener("click", async (event) => {
 
   if (action === "edit") {
     console.log("edit clicked", { type, id });
-    console.log("projects_cache", projects_cache);
-    console.log("posts_cache", posts_cache);
-    console.log("resumes_cache", resumes_cache);
 
     if (type === "projects") {
       const item = projects_cache.find((entry) => entry.id === id);
-      console.log("project found", item);
       if (item) fill_project_form(item);
     }
 
     if (type === "posts") {
       const item = posts_cache.find((entry) => entry.id === id);
-      console.log("post found", item);
       if (item) fill_post_form(item);
     }
 
     if (type === "resumes") {
       const item = resumes_cache.find((entry) => entry.id === id);
-      console.log("resume found", item);
       if (item) fill_resume_form(item);
+    }
+
+    if (type === "work") {
+      const item = work_cache.find((entry) => entry.id === id);
+      if (item) fill_entry_form(work_fields, item, "work_tab");
+    }
+
+    if (type === "academia") {
+      const item = academia_cache.find((entry) => entry.id === id);
+      if (item) fill_entry_form(academia_fields, item, "academia_tab");
+    }
+
+    if (type === "awards") {
+      const item = awards_cache.find((entry) => entry.id === id);
+      if (item) fill_entry_form(awards_fields, item, "awards_tab");
     }
 
     return;
@@ -825,6 +987,21 @@ document.addEventListener("click", async (event) => {
             is_current: resume.is_current,
           })),
         });
+      }
+
+      if (type === "work") {
+        work_cache = work_cache.filter((item) => item.id !== id);
+        await save_entries("work", work_cache, "work_id");
+      }
+
+      if (type === "academia") {
+        academia_cache = academia_cache.filter((item) => item.id !== id);
+        await save_entries("academia", academia_cache, "academia_id");
+      }
+
+      if (type === "awards") {
+        awards_cache = awards_cache.filter((item) => item.id !== id);
+        await save_entries("awards", awards_cache, "awards_id");
       }
 
       set_message("Item deleted");
