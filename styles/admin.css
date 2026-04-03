@@ -5,18 +5,19 @@
 }
 
 :root {
-  --bg_main: #0f172a;
-  --bg_sidebar: #020617;
-  --bg_panel: #1e293b;
-  --bg_input: #0b1220;
-  --border: rgba(255, 255, 255, 0.08);
-  --text_main: #f8fafc;
-  --text_soft: #cbd5e1;
-  --text_muted: #94a3b8;
-  --blue: #3b82f6;
-  --blue_dark: #2563eb;
-  --blue_soft: rgba(59, 130, 246, 0.16);
-  --shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
+  --bg-main: #fff8fb;
+  --bg-sidebar: #fff0f5;
+  --bg-panel: #ffffff;
+  --bg-input: #fffafd;
+  --border: rgba(173, 39, 86, 0.12);
+  --text-main: #2f1120;
+  --text-soft: #6f4257;
+  --text-muted: #9b6d82;
+  --accent: #c2185b;
+  --accent-dark: #9f1248;
+  --accent-soft: rgba(194, 24, 91, 0.1);
+  --accent-pale: rgba(194, 24, 91, 0.06);
+  --shadow: 0 16px 34px rgba(126, 28, 65, 0.1);
 }
 
 html,
@@ -26,8 +27,8 @@ body {
 
 body {
   font-family: Arial, sans-serif;
-  background: var(--bg_main);
-  color: var(--text_main);
+  background: var(--bg-main);
+  color: var(--text-main);
   line-height: 1.6;
 }
 
@@ -50,8 +51,8 @@ input,
 textarea {
   width: 100%;
   border: 1px solid var(--border);
-  background: var(--bg_input);
-  color: var(--text_main);
+  background: var(--bg-input);
+  color: var(--text-main);
   border-radius: 14px;
   padding: 14px 16px;
   outline: none;
@@ -64,8 +65,8 @@ textarea {
 
 input:focus,
 textarea:focus {
-  border-color: #60a5fa;
-  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+  border-color: rgba(194, 24, 91, 0.42);
+  box-shadow: 0 0 0 3px rgba(194, 24, 91, 0.12);
 }
 
 .welcome_screen {
@@ -74,12 +75,14 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: linear-gradient(135deg, #0f172a 0%, #1e293b 55%, #334155 100%);
+  background:
+    radial-gradient(circle at top left, rgba(194, 24, 91, 0.14), transparent 30%),
+    linear-gradient(135deg, #fff8fb 0%, #fff1f6 55%, #ffe6ef 100%);
 }
 
 .welcome_card {
   width: min(560px, 100%);
-  background: var(--bg_panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 24px;
   padding: 36px;
@@ -88,7 +91,7 @@ textarea:focus {
 }
 
 .welcome_label {
-  color: #93c5fd;
+  color: var(--accent);
   text-transform: uppercase;
   letter-spacing: 2px;
   font-size: 0.85rem;
@@ -98,10 +101,11 @@ textarea:focus {
 .welcome_card h1 {
   font-size: clamp(2rem, 5vw, 3rem);
   margin-bottom: 12px;
+  color: var(--text-main);
 }
 
 .welcome_text {
-  color: var(--text_soft);
+  color: var(--text-soft);
   margin-bottom: 22px;
 }
 
@@ -118,10 +122,11 @@ textarea:focus {
   border: none;
   border-radius: 12px;
   padding: 12px 18px;
-  background: var(--blue);
+  background: var(--accent);
   color: #fff;
   font-weight: 700;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 10px 20px rgba(194, 24, 91, 0.14);
 }
 
 .welcome_actions button:hover,
@@ -130,12 +135,12 @@ textarea:focus {
 .view_site_link:hover,
 .list_header button:hover {
   transform: translateY(-1px);
-  background: var(--blue_dark);
+  background: var(--accent-dark);
 }
 
 .welcome_status {
   margin-top: 16px;
-  color: var(--text_soft);
+  color: var(--text-soft);
 }
 
 .dashboard_shell {
@@ -145,7 +150,7 @@ textarea:focus {
 }
 
 .dashboard_sidebar {
-  background: var(--bg_sidebar);
+  background: var(--bg-sidebar);
   border-right: 1px solid var(--border);
   padding: 28px 20px;
   position: sticky;
@@ -159,14 +164,15 @@ textarea:focus {
 .sidebar_brand h1 {
   font-size: 1.5rem;
   margin-bottom: 4px;
+  color: var(--accent-dark);
 }
 
 .sidebar_brand p {
-  color: var(--text_muted);
+  color: var(--text-muted);
 }
 
 .panel {
-  background: var(--bg_panel);
+  background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: 22px;
   padding: 22px;
@@ -175,7 +181,7 @@ textarea:focus {
 
 .sidebar_auth p,
 #save_message {
-  color: var(--text_soft);
+  color: var(--text-soft);
 }
 
 .auth_actions {
@@ -188,9 +194,9 @@ textarea:focus {
 #logout_btn,
 .secondary_btn,
 .item_actions button {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text_main);
-  border: none;
+  background: var(--accent-pale);
+  color: var(--accent-dark);
+  border: 1px solid rgba(194, 24, 91, 0.14);
   border-radius: 12px;
   padding: 10px 14px;
   font-weight: 700;
@@ -199,7 +205,7 @@ textarea:focus {
 #logout_btn:hover,
 .secondary_btn:hover,
 .item_actions button:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(194, 24, 91, 0.12);
 }
 
 .sidebar_nav {
@@ -214,19 +220,19 @@ textarea:focus {
   border-radius: 14px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--text_soft);
+  color: var(--text-soft);
   font-weight: 700;
 }
 
 .nav_tab:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  background: rgba(194, 24, 91, 0.06);
+  color: var(--accent-dark);
 }
 
 .nav_tab.active {
-  background: var(--blue_soft);
-  border-color: rgba(59, 130, 246, 0.28);
-  color: #bfdbfe;
+  background: var(--accent-soft);
+  border-color: rgba(194, 24, 91, 0.18);
+  color: var(--accent-dark);
 }
 
 .view_site_link {
@@ -254,10 +260,11 @@ textarea:focus {
 .page_header h2 {
   font-size: 2rem;
   margin-bottom: 6px;
+  color: var(--text-main);
 }
 
 .page_header p {
-  color: var(--text_muted);
+  color: var(--text-muted);
 }
 
 .stats_grid {
@@ -268,7 +275,7 @@ textarea:focus {
 }
 
 .stat_card h3 {
-  color: var(--text_soft);
+  color: var(--text-soft);
   font-size: 1rem;
   margin-bottom: 8px;
 }
@@ -276,6 +283,7 @@ textarea:focus {
 .stat_card p {
   font-size: 2rem;
   font-weight: 700;
+  color: var(--accent-dark);
 }
 
 .form_panel {
@@ -296,7 +304,7 @@ textarea:focus {
 
 .form_group label {
   font-weight: 700;
-  color: var(--text_soft);
+  color: var(--text-soft);
 }
 
 .full_width {
@@ -316,7 +324,7 @@ textarea:focus {
   gap: 8px;
 }
 
-.checkbox_group input[type="checkbox"] {
+.checkbox_group input[type='checkbox'] {
   width: auto;
 }
 
@@ -348,7 +356,7 @@ textarea:focus {
 }
 
 .item_card {
-  background: rgba(255, 255, 255, 0.04);
+  background: #fff9fc;
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 16px;
@@ -363,10 +371,11 @@ textarea:focus {
 
 .item_card h4 {
   margin-bottom: 4px;
+  color: var(--text-main);
 }
 
 .item_card p {
-  color: var(--text_muted);
+  color: var(--text-muted);
 }
 
 .item_actions {
