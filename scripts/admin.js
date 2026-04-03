@@ -155,6 +155,32 @@ const show_toast = (text, is_error = false) => {
   toast_timeout = setTimeout(() => { toast_el.className = ""; }, 3000);
 };
 
+// ── DynamoDB unmarshaller ─────────────────────────────────────────────────────
+// Your API returns raw DynamoDB JSON like {"S":"hello"} and {"N":"1"}.
+// This converts it back into plain JS values.
+
+const unmarshall = (obj) => {
+  if (obj["S"]    !== undefined) return obj["S"];
+  if (obj["N"]    !== undefined) return Number(obj["N"]);
+  if (obj["BOOL"] !== undefined) return obj["BOOL"];
+  if (obj["NULL"] !== undefined) return null;
+  if (obj["L"]    !== undefined) return obj["L"].map(unmarshall);
+  if (obj["M"]    !== undefined) {
+    const result = {};
+    for (const key of Object.keys(obj["M"])) {
+      result[key] = unmarshall(obj["M"][key]);
+    }
+    return result;
+  }
+  return obj;
+};
+
+const unmarshall_response = (data) => {
+  const id    = data.id    ? unmarshall(data.id)    : "";
+  const items = data.items ? unmarshall(data.items) : [];
+  return { id, items };
+};
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const slugify = (value) =>
@@ -273,7 +299,7 @@ const exchangeCodeForTokens = async (code, verifier) => {
 };
 
 const handle_cognito_redirect = async () => {
-  const url = new URL(window.location.href);
+  const url   = new URL(window.location.href);
   const code  = url.searchParams.get("code");
   const error = url.searchParams.get("error");
   const error_description = url.searchParams.get("error_description");
@@ -384,12 +410,14 @@ const render_list = (container, items, type) => {
 
   container.innerHTML = items.map((item) => {
     const status_text =
-      type === "projects" ? (item.is_visible  ? "Visible"   : "Hidden") :
-      type === "posts"    ? (item.is_published ? "Published" : "Draft")  :
-      type === "resumes"  ? (item.is_current   ? "Current"  : "Archived") :
+      type === "projects" ? (item.is_visible  ? "Visible"   : "Hidden")   :
+      type === "posts"    ? (item.is_published ? "Published" : "Draft")    :
+      type === "resumes"  ? (item.is_current   ? "Current"   : "Archived") :
       item.date_range || "";
 
-    const sort_label = item.sort_order != null ? `<span class='item_sort_badge'>#${item.sort_order}</span>` : "";
+    const sort_label = item.sort_order != null
+      ? `<span class='item_sort_badge'>#${item.sort_order}</span>`
+      : "";
 
     return `
       <div class='item_card'>
@@ -420,16 +448,16 @@ const update_counts = () => {
 // ── Clear forms ───────────────────────────────────────────────────────────────
 
 const clear_project_form = () => {
-  project_fields.id.value          = "";
-  project_fields.title.value       = "";
-  project_fields.slug.value        = "";
-  project_fields.category.value    = "";
-  project_fields.description.value = "";
-  project_fields.link.value        = "";
-  project_fields.image_url.value   = "";
+  project_fields.id.value            = "";
+  project_fields.title.value         = "";
+  project_fields.slug.value          = "";
+  project_fields.category.value      = "";
+  project_fields.description.value   = "";
+  project_fields.link.value          = "";
+  project_fields.image_url.value     = "";
   project_fields.is_visible.checked  = true;
   project_fields.is_featured.checked = false;
-  project_fields.sort_order.value  = projects_cache.length + 1;
+  project_fields.sort_order.value    = projects_cache.length + 1;
 };
 
 const clear_post_form = () => {
@@ -444,11 +472,11 @@ const clear_post_form = () => {
 };
 
 const clear_resume_form = () => {
-  resume_fields.id.value          = "";
-  resume_fields.title.value       = "";
-  resume_fields.file_name.value   = "";
-  resume_fields.file_url.value    = "";
-  resume_fields.is_current.checked = false;
+  resume_fields.id.value            = "";
+  resume_fields.title.value         = "";
+  resume_fields.file_name.value     = "";
+  resume_fields.file_url.value      = "";
+  resume_fields.is_current.checked  = false;
 };
 
 const clear_entry_form = (fields, cache) => {
@@ -491,11 +519,11 @@ const fill_post_form = (item) => {
 };
 
 const fill_resume_form = (item) => {
-  resume_fields.id.value           = item.id;
-  resume_fields.title.value        = item.title || "";
-  resume_fields.file_name.value    = item.file_name || "";
-  resume_fields.file_url.value     = item.file_url || "";
-  resume_fields.is_current.checked = !!item.is_current;
+  resume_fields.id.value            = item.id;
+  resume_fields.title.value         = item.title || "";
+  resume_fields.file_name.value     = item.file_name || "";
+  resume_fields.file_url.value      = item.file_url || "";
+  resume_fields.is_current.checked  = !!item.is_current;
   switch_tab("resumes_tab");
 };
 
@@ -581,7 +609,8 @@ const save_entries = (section_key, cache, id_key) =>
 // ── Load data ─────────────────────────────────────────────────────────────────
 
 const load_site_content = async () => {
-  const data = await api_get("site");
+  const raw  = await api_get("site");
+  const data = unmarshall_response(raw);
   Object.keys(site_fields).forEach((key) => {
     site_fields[key].value = data[key] || "";
   });
@@ -590,14 +619,19 @@ const load_site_content = async () => {
 const load_dashboard_data = async () => {
   await load_site_content();
 
+  const safe_get = async (id) => {
+    try { return unmarshall_response(await api_get(id)); }
+    catch { return { items: [] }; }
+  };
+
   const [projects_data, posts_data, resumes_data, work_data, academia_data, awards_data] =
     await Promise.all([
-      api_get("projects"),
-      api_get("posts"),
-      api_get("resumes"),
-      api_get("work"),
-      api_get("academia"),
-      api_get("awards"),
+      safe_get("projects"),
+      safe_get("posts"),
+      safe_get("resumes"),
+      safe_get("work"),
+      safe_get("academia"),
+      safe_get("awards"),
     ]);
 
   projects_cache = normalize_projects(projects_data.items || []).sort((a, b) => a.sort_order - b.sort_order);
@@ -756,9 +790,9 @@ awards_form.addEventListener("submit",   (e) => handle_entry_submit(e, awards_fi
 
 // ── New / reset buttons ───────────────────────────────────────────────────────
 
-new_project_btn.addEventListener("click",  () => { clear_project_form();                      switch_tab("projects_tab"); });
-new_post_btn.addEventListener("click",     () => { clear_post_form();                         switch_tab("posts_tab"); });
-new_resume_btn.addEventListener("click",   () => { clear_resume_form();                       switch_tab("resumes_tab"); });
+new_project_btn.addEventListener("click",  () => { clear_project_form();                             switch_tab("projects_tab"); });
+new_post_btn.addEventListener("click",     () => { clear_post_form();                                switch_tab("posts_tab"); });
+new_resume_btn.addEventListener("click",   () => { clear_resume_form();                              switch_tab("resumes_tab"); });
 new_work_btn.addEventListener("click",     () => { clear_entry_form(work_fields,     work_cache);     switch_tab("work_tab"); });
 new_academia_btn.addEventListener("click", () => { clear_entry_form(academia_fields, academia_cache); switch_tab("academia_tab"); });
 new_awards_btn.addEventListener("click",   () => { clear_entry_form(awards_fields,   awards_cache);   switch_tab("awards_tab"); });
