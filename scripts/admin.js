@@ -202,7 +202,7 @@ const start_session = (token, email) => {
   schedule_auto_logout()
 }
 
-const randomString = (length = 64) => {
+const randomString = (length = 96) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'
   const array = new Uint8Array(length)
   crypto.getRandomValues(array)
@@ -261,6 +261,7 @@ const handle_cognito_redirect = async () => {
   const error_description = url.searchParams.get('error_description')
 
   if (error) {
+    console.error('cognito error:', error, error_description)
     set_message(error_description || error)
     return false
   }
@@ -279,9 +280,18 @@ const handle_cognito_redirect = async () => {
     const decoded = parseJwt(id_token)
     const email = decoded?.email || ''
 
+    console.log('decoded token:', decoded)
+    console.log('email from token:', email)
+    console.log('allowed email:', ALLOWED_ADMIN_EMAIL)
+
     window.history.replaceState({}, document.title, window.location.pathname)
 
-    if (!email || email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+    if (!email) {
+      set_message('Missing email in token')
+      return false
+    }
+
+    if (email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
       end_session('This account is not allowed', true)
       return false
     }
@@ -290,7 +300,7 @@ const handle_cognito_redirect = async () => {
     sessionStorage.removeItem(PKCE_VERIFIER_KEY)
     return true
   } catch (error) {
-    console.error(error)
+    console.error('token exchange failed:', error)
     set_message('Sign in failed')
     return false
   }
@@ -798,15 +808,13 @@ login_btn.addEventListener('click', async () => {
   sessionStorage.setItem(PKCE_VERIFIER_KEY, verifier)
 
   const loginUrl =
-    `${COGNITO_DOMAIN}/oauth2/authorize` +
-    `?identity_provider=Google` +
+    `${COGNITO_DOMAIN}/login` +
+    `?client_id=${encodeURIComponent(CLIENT_ID)}` +
     `&response_type=code` +
-    `&client_id=${encodeURIComponent(CLIENT_ID)}` +
-    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
     `&scope=${encodeURIComponent('openid email profile')}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
     `&code_challenge_method=S256` +
-    `&code_challenge=${encodeURIComponent(challenge)}` +
-    `&prompt=login`
+    `&code_challenge=${encodeURIComponent(challenge)}`
 
   window.location.href = loginUrl
 })
