@@ -425,8 +425,8 @@ const render_list = (container, items, type) => {
               <p>${status_text}</p>
             </div>
             <div class='item_actions'>
-              <button type='button' data_action='edit' data_type='${type}' data_id='${item.id}'>Edit</button>
-              <button type='button' data_action='delete' data_type='${type}' data_id='${item.id}'>Delete</button>
+              <button type='button' data-action='edit' data-type='${type}' data-id='${item.id}'>Edit</button>
+              <button type='button' data-action='delete' data-type='${type}' data-id='${item.id}'>Delete</button>
             </div>
           </div>
         </div>
@@ -736,7 +736,7 @@ reset_post_btn.addEventListener("click", clear_post_form);
 reset_resume_btn.addEventListener("click", clear_resume_form);
 
 document.addEventListener("click", async (event) => {
-  const button = event.target.closest("[data_action]");
+  const button = event.target.closest("[data-action]");
   if (!button) return;
 
   const { action, type, id } = button.dataset;
