@@ -824,20 +824,29 @@ logout_btn.addEventListener('click', () => {
 })
 
 const boot = async () => {
+  console.log('BOOT START')
+  console.log('current url:', window.location.href)
+  console.log('search:', window.location.search)
+
   const just_logged_in = await handle_cognito_redirect()
+  console.log('just_logged_in:', just_logged_in)
 
   if (just_logged_in || has_valid_session()) {
     const email = sessionStorage.getItem(SESSION_EMAIL_KEY) || ''
+    console.log('valid session for:', email)
+
     set_logged_in_view(email)
     schedule_auto_logout()
 
     try {
       await load_dashboard_data()
+      console.log('dashboard loaded')
     } catch (error) {
-      console.error(error)
+      console.error('dashboard load failed:', error)
       set_message('Failed to load dashboard data')
     }
   } else {
+    console.log('no valid session, showing local login')
     clear_local_session()
     set_logged_out_view()
   }
