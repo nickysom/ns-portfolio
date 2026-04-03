@@ -7,6 +7,7 @@ const ALLOWED_ADMIN_EMAIL = 'nickysom@icloud.com'
 const SESSION_TOKEN_KEY = 'admin_id_token'
 const SESSION_EMAIL_KEY = 'admin_email'
 const SESSION_TIMER_KEY = 'admin_session_expires_at'
+const PKCE_VERIFIER_KEY = 'pkce_code_verifier'
 const SESSION_MS = 5 * 60 * 1000
 
 const auth_status = document.getElementById('auth_status')
@@ -137,6 +138,7 @@ const clear_local_session = () => {
   sessionStorage.removeItem(SESSION_TOKEN_KEY)
   sessionStorage.removeItem(SESSION_EMAIL_KEY)
   sessionStorage.removeItem(SESSION_TIMER_KEY)
+  sessionStorage.removeItem(PKCE_VERIFIER_KEY)
 
   if (logout_timer) {
     clearTimeout(logout_timer)
@@ -200,26 +202,98 @@ const start_session = (token, email) => {
   schedule_auto_logout()
 }
 
-const handle_cognito_redirect = () => {
-  const hash = window.location.hash.replace(/^#/, '')
-  if (!hash) return false
+const randomString = (length = 64) => {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~'
+  const array = new Uint8Array(length)
+  crypto.getRandomValues(array)
+  return Array.from(array, (x) => chars[x % chars.length]).join('')
+}
 
-  const params = new URLSearchParams(hash)
-  const id_token = params.get('id_token')
-  if (!id_token) return false
+const sha256 = async (plain) => {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(plain)
+  return crypto.subtle.digest('SHA-256', data)
+}
 
-  const decoded = parseJwt(id_token)
-  const email = decoded?.email || ''
+const base64UrlEncode = (arrayBuffer) => {
+  const bytes = new Uint8Array(arrayBuffer)
+  let string = ''
+  bytes.forEach((byte) => {
+    string += String.fromCharCode(byte)
+  })
+  return btoa(string).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
 
-  window.history.replaceState({}, document.title, window.location.pathname)
+const createCodeChallenge = async (verifier) => {
+  const hashed = await sha256(verifier)
+  return base64UrlEncode(hashed)
+}
 
-  if (!email || email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
-    end_session('This account is not allowed', true)
+const exchangeCodeForTokens = async (code, verifier) => {
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    client_id: CLIENT_ID,
+    code,
+    redirect_uri: REDIRECT_URI,
+    code_verifier: verifier
+  })
+
+  const response = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: body.toString()
+  })
+
+  if (!response.ok) {
+    const text = await response.text()
+    throw new Error(text || 'Token exchange failed')
+  }
+
+  return response.json()
+}
+
+const handle_cognito_redirect = async () => {
+  const url = new URL(window.location.href)
+  const code = url.searchParams.get('code')
+  const error = url.searchParams.get('error')
+  const error_description = url.searchParams.get('error_description')
+
+  if (error) {
+    set_message(error_description || error)
     return false
   }
 
-  start_session(id_token, email)
-  return true
+  if (!code) return false
+
+  const verifier = sessionStorage.getItem(PKCE_VERIFIER_KEY)
+  if (!verifier) {
+    set_message('Missing login verifier. Please try signing in again.')
+    return false
+  }
+
+  try {
+    const tokens = await exchangeCodeForTokens(code, verifier)
+    const id_token = tokens.id_token
+    const decoded = parseJwt(id_token)
+    const email = decoded?.email || ''
+
+    window.history.replaceState({}, document.title, window.location.pathname)
+
+    if (!email || email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+      end_session('This account is not allowed', true)
+      return false
+    }
+
+    start_session(id_token, email)
+    sessionStorage.removeItem(PKCE_VERIFIER_KEY)
+    return true
+  } catch (error) {
+    console.error(error)
+    set_message('Sign in failed')
+    return false
+  }
 }
 
 const has_valid_session = () => {
@@ -716,16 +790,22 @@ document.addEventListener('click', async (event) => {
   }
 })
 
-login_btn.addEventListener('click', () => {
+login_btn.addEventListener('click', async () => {
   clear_local_session()
+
+  const verifier = randomString(96)
+  const challenge = await createCodeChallenge(verifier)
+  sessionStorage.setItem(PKCE_VERIFIER_KEY, verifier)
 
   const loginUrl =
     `${COGNITO_DOMAIN}/oauth2/authorize` +
     `?identity_provider=Google` +
-    `&response_type=token` +
+    `&response_type=code` +
     `&client_id=${encodeURIComponent(CLIENT_ID)}` +
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
     `&scope=${encodeURIComponent('openid email profile')}` +
+    `&code_challenge_method=S256` +
+    `&code_challenge=${encodeURIComponent(challenge)}` +
     `&prompt=login`
 
   window.location.href = loginUrl
@@ -735,17 +815,24 @@ logout_btn.addEventListener('click', () => {
   end_session('Signed out', true)
 })
 
-const just_logged_in = handle_cognito_redirect()
+const boot = async () => {
+  const just_logged_in = await handle_cognito_redirect()
 
-if (just_logged_in || has_valid_session()) {
-  const email = sessionStorage.getItem(SESSION_EMAIL_KEY) || ''
-  set_logged_in_view(email)
-  schedule_auto_logout()
-  load_dashboard_data().catch((error) => {
-    console.error(error)
-    set_message('Failed to load dashboard data')
-  })
-} else {
-  clear_local_session()
-  set_logged_out_view()
+  if (just_logged_in || has_valid_session()) {
+    const email = sessionStorage.getItem(SESSION_EMAIL_KEY) || ''
+    set_logged_in_view(email)
+    schedule_auto_logout()
+
+    try {
+      await load_dashboard_data()
+    } catch (error) {
+      console.error(error)
+      set_message('Failed to load dashboard data')
+    }
+  } else {
+    clear_local_session()
+    set_logged_out_view()
+  }
 }
+
+boot()
