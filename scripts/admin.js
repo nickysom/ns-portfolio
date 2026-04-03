@@ -155,32 +155,6 @@ const show_toast = (text, is_error = false) => {
   toast_timeout = setTimeout(() => { toast_el.className = ""; }, 3000);
 };
 
-// ── DynamoDB unmarshaller ─────────────────────────────────────────────────────
-// Your API returns raw DynamoDB JSON like {"S":"hello"} and {"N":"1"}.
-// This converts it back into plain JS values.
-
-const unmarshall = (obj) => {
-  if (obj["S"]    !== undefined) return obj["S"];
-  if (obj["N"]    !== undefined) return Number(obj["N"]);
-  if (obj["BOOL"] !== undefined) return obj["BOOL"];
-  if (obj["NULL"] !== undefined) return null;
-  if (obj["L"]    !== undefined) return obj["L"].map(unmarshall);
-  if (obj["M"]    !== undefined) {
-    const result = {};
-    for (const key of Object.keys(obj["M"])) {
-      result[key] = unmarshall(obj["M"][key]);
-    }
-    return result;
-  }
-  return obj;
-};
-
-const unmarshall_response = (data) => {
-  const id    = data.id    ? unmarshall(data.id)    : "";
-  const items = data.items ? unmarshall(data.items) : [];
-  return { id, items };
-};
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const slugify = (value) =>
@@ -334,6 +308,8 @@ const handle_cognito_redirect = async () => {
 };
 
 // ── API ───────────────────────────────────────────────────────────────────────
+// NOTE: The GET Lambda already unmarshalls DynamoDB format into plain JSON,
+// so we use the response data directly — no extra unmarshalling needed here.
 
 const api_get = async (id) => {
   const response = await fetch(`${API_BASE}/content/${id}`);
@@ -349,6 +325,12 @@ const api_put = async (id, payload) => {
   });
   if (!response.ok) { const text = await response.text(); throw new Error(text || `Failed to save ${id}`); }
   return response.json();
+};
+
+// Safely fetch a content key — returns { items: [] } if missing (404)
+const safe_get = async (id) => {
+  try { return await api_get(id); }
+  catch { return { items: [] }; }
 };
 
 // ── Normalizers ───────────────────────────────────────────────────────────────
@@ -609,8 +591,8 @@ const save_entries = (section_key, cache, id_key) =>
 // ── Load data ─────────────────────────────────────────────────────────────────
 
 const load_site_content = async () => {
-  const raw  = await api_get("site");
-  const data = unmarshall_response(raw);
+  // api_get already returns plain JSON (GET Lambda unmarshalls DynamoDB format)
+  const data = await api_get("site");
   Object.keys(site_fields).forEach((key) => {
     site_fields[key].value = data[key] || "";
   });
@@ -618,11 +600,6 @@ const load_site_content = async () => {
 
 const load_dashboard_data = async () => {
   await load_site_content();
-
-  const safe_get = async (id) => {
-    try { return unmarshall_response(await api_get(id)); }
-    catch { return { items: [] }; }
-  };
 
   const [projects_data, posts_data, resumes_data, work_data, academia_data, awards_data] =
     await Promise.all([
@@ -885,12 +862,10 @@ search_input.addEventListener("input", () => {
 search_results.addEventListener("click", (event) => {
   const result = event.target.closest(".search_result_item");
   if (!result || !result.dataset.tab) return;
-
   const { tab, id, type } = result.dataset;
   switch_tab(tab);
   search_input.value = "";
   search_results.classList.remove("visible");
-
   setTimeout(() => {
     const btn = document.querySelector(`[data-action='edit'][data-type='${type}'][data-id='${id}']`);
     if (btn) btn.closest(".item_card").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -932,7 +907,6 @@ logout_btn.addEventListener("click", () => {
 
 const boot = async () => {
   console.log("BOOT START");
-
   const just_logged_in = await handle_cognito_redirect();
 
   if (just_logged_in || has_valid_session()) {

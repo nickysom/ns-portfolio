@@ -5,6 +5,85 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Nicky Portfolio</title>
   <link rel="stylesheet" href="styles/main.css" />
+  <style>
+    /* ── Entry cards (work / academia / awards) ── */
+    .entry_list {
+      display: grid;
+      gap: 20px;
+    }
+
+    .entry_card {
+      background: var(--bg-panel, #fff);
+      border: 1px solid var(--border, rgba(173,39,86,0.12));
+      border-radius: 18px;
+      padding: 22px 26px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .entry_card_header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .entry_card_titles {
+      display: grid;
+      gap: 3px;
+    }
+
+    .entry_title {
+      font-size: 1.1rem;
+      color: var(--text-main, #2f1120);
+      margin: 0;
+    }
+
+    .entry_subtitle {
+      font-size: 0.92rem;
+      color: var(--accent, #c2185b);
+      margin: 0;
+      font-weight: 600;
+    }
+
+    .entry_org {
+      font-size: 0.88rem;
+      color: var(--text-soft, #6f4257);
+      margin: 0;
+    }
+
+    .entry_date {
+      font-size: 0.82rem;
+      color: var(--text-muted, #9b6d82);
+      white-space: nowrap;
+      background: var(--accent-pale, rgba(194,24,91,0.06));
+      border-radius: 8px;
+      padding: 4px 10px;
+      flex-shrink: 0;
+    }
+
+    .entry_description {
+      font-size: 0.93rem;
+      color: var(--text-soft, #6f4257);
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .entry_link {
+      font-size: 0.88rem;
+      color: var(--accent, #c2185b);
+      font-weight: 600;
+      text-decoration: none;
+      width: fit-content;
+    }
+
+    .entry_link:hover { text-decoration: underline; }
+
+    .entries_empty {
+      color: var(--text-muted, #9b6d82);
+      font-style: italic;
+    }
+  </style>
 </head>
 <body>
   <header class="site_header">
@@ -27,11 +106,10 @@
   <section id="home" class="hero_banner">
     <div class="container hero_content">
       <p class="hero_subtitle" id="subtitle">Student • Developer • Builder</p>
-      <h1 id="title">Hi, I’m Nicky</h1>
+      <h1 id="title">Hi, I'm Nicky</h1>
       <p class="hero_text" id="intro">
         Welcome to my portfolio. I build projects in software, design, cloud, and data.
       </p>
-
       <div class="hero_buttons">
         <a href="#projects_section" class="button_primary">View Projects</a>
         <a href="#contact_section" class="button_secondary">Contact</a>
@@ -46,11 +124,8 @@
           <p class="section_label">About</p>
           <h2>About Me</h2>
         </div>
-
         <div class="text_card">
-          <p id="about">
-            I’m a student interested in technology, design, data, and building creative solutions.
-          </p>
+          <p id="about">I'm a student interested in technology, design, data, and building creative solutions.</p>
         </div>
       </div>
     </section>
@@ -61,7 +136,6 @@
           <p class="section_label">Resume</p>
           <h2>Current Resume</h2>
         </div>
-
         <div class="text_card" id="current_resume_wrap">
           <p id="current_resume_text">No resume available yet.</p>
           <div class="hero_buttons" style="justify-content:flex-start; margin-top:18px;">
@@ -77,11 +151,8 @@
           <p class="section_label">Portfolio</p>
           <h2>Projects</h2>
         </div>
-
         <div class="project_grid" id="projects_grid">
-          <article class="project_card">
-            <h3>Loading projects...</h3>
-          </article>
+          <article class="project_card"><h3>Loading projects...</h3></article>
         </div>
       </div>
     </section>
@@ -92,11 +163,8 @@
           <p class="section_label">Posts</p>
           <h2>Latest Updates</h2>
         </div>
-
         <div class="project_grid" id="posts_grid">
-          <article class="project_card">
-            <h3>Loading posts...</h3>
-          </article>
+          <article class="project_card"><h3>Loading posts...</h3></article>
         </div>
       </div>
     </section>
@@ -107,11 +175,8 @@
           <p class="section_label">Academia</p>
           <h2>Academic Background</h2>
         </div>
-
-        <div class="text_card">
-          <p id="academia">
-            Coursework, research, certifications, and academic highlights go here.
-          </p>
+        <div class="entry_list" id="academia_grid">
+          <p class="entries_empty">Loading...</p>
         </div>
       </div>
     </section>
@@ -122,11 +187,8 @@
           <p class="section_label">Work</p>
           <h2>Professional Experience</h2>
         </div>
-
-        <div class="text_card">
-          <p id="work">
-            Internships, experience, responsibilities, and achievements go here.
-          </p>
+        <div class="entry_list" id="work_grid">
+          <p class="entries_empty">Loading...</p>
         </div>
       </div>
     </section>
@@ -137,11 +199,8 @@
           <p class="section_label">Awards</p>
           <h2>Achievements</h2>
         </div>
-
-        <div class="text_card">
-          <p id="awards">
-            Awards, recognition, and accomplishments go here.
-          </p>
+        <div class="entry_list" id="awards_grid">
+          <p class="entries_empty">Loading...</p>
         </div>
       </div>
     </section>
@@ -152,27 +211,11 @@
           <p class="section_label">Contact</p>
           <h2>Get In Touch</h2>
         </div>
-
         <div class="contact_grid">
-          <div class="contact_card">
-            <h3>Email</h3>
-            <p id="email">your@email.com</p>
-          </div>
-
-          <div class="contact_card">
-            <h3>LinkedIn</h3>
-            <p id="linkedin">your_linkedin</p>
-          </div>
-
-          <div class="contact_card">
-            <h3>GitHub</h3>
-            <p id="github">your_github</p>
-          </div>
-
-          <div class="contact_card">
-            <h3>Instagram</h3>
-            <p id="instagram">your_instagram</p>
-          </div>
+          <div class="contact_card"><h3>Email</h3><p id="email">your@email.com</p></div>
+          <div class="contact_card"><h3>LinkedIn</h3><p id="linkedin">your_linkedin</p></div>
+          <div class="contact_card"><h3>GitHub</h3><p id="github">your_github</p></div>
+          <div class="contact_card"><h3>Instagram</h3><p id="instagram">your_instagram</p></div>
         </div>
       </div>
     </section>
@@ -182,11 +225,8 @@
     <div class="container footer_inner">
       <div class="footer_left">
         <h3>Nicky</h3>
-        <p>
-          Portfolio featuring projects in development, design, analytics, cloud solutions, and academic work.
-        </p>
+        <p>Portfolio featuring projects in development, design, analytics, cloud solutions, and academic work.</p>
       </div>
-
       <div class="footer_right">
         <a href="#about_section">About</a>
         <a href="#projects_section">Projects</a>
@@ -198,7 +238,6 @@
         <a href="#contact_section">Contact</a>
       </div>
     </div>
-
     <div class="container footer_bottom">
       <p>© 2026 Nicky. All rights reserved.</p>
     </div>

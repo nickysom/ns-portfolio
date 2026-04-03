@@ -15,40 +15,56 @@ const escapeHtml = (value = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;')
 
+// ── Normalizers ───────────────────────────────────────────────────────────────
+
 const normalizeProjects = (items = []) =>
   items.map((item) => ({
-    project_id: item.project_id || '',
-    title: item.title || 'Untitled Project',
+    project_id:  item.project_id || '',
+    title:       item.title || 'Untitled Project',
     description: item.description || '',
-    category: item.category || 'Project',
-    slug: item.slug || '',
-    link: item.link || '',
-    image_url: item.image_url || '',
-    is_visible: item.is_visible !== false,
+    category:    item.category || 'Project',
+    slug:        item.slug || '',
+    link:        item.link || '',
+    image_url:   item.image_url || '',
+    is_visible:  item.is_visible !== false,
     is_featured: !!item.is_featured,
-    sort_order: Number(item.sort_order || 9999)
+    sort_order:  Number(item.sort_order || 9999)
   }))
 
 const normalizePosts = (items = []) =>
   items.map((item) => ({
-    post_id: item.post_id || '',
-    title: item.title || 'Untitled Post',
-    excerpt: item.excerpt || '',
-    content: item.content || '',
-    slug: item.slug || '',
+    post_id:         item.post_id || '',
+    title:           item.title || 'Untitled Post',
+    excerpt:         item.excerpt || '',
+    content:         item.content || '',
+    slug:            item.slug || '',
     cover_image_url: item.cover_image_url || '',
-    is_published: item.is_published !== false,
-    sort_order: Number(item.sort_order || 9999)
+    is_published:    item.is_published !== false,
+    sort_order:      Number(item.sort_order || 9999)
   }))
 
 const normalizeResumes = (items = []) =>
   items.map((item) => ({
-    resume_id: item.resume_id || '',
-    title: item.title || 'Current Resume',
-    file_name: item.file_name || '',
-    file_url: item.file_url || '',
+    resume_id:  item.resume_id || '',
+    title:      item.title || 'Current Resume',
+    file_name:  item.file_name || '',
+    file_url:   item.file_url || '',
     is_current: !!item.is_current
   }))
+
+const normalizeEntries = (items = [], id_key) =>
+  items.map((item) => ({
+    id:           item[id_key] || '',
+    title:        item.title || '',
+    subtitle:     item.subtitle || '',
+    organization: item.organization || '',
+    date_range:   item.date_range || '',
+    description:  item.description || '',
+    link:         item.link || '',
+    sort_order:   Number(item.sort_order || 9999)
+  }))
+
+// ── Renderers ─────────────────────────────────────────────────────────────────
 
 const createProjectCard = (project) => {
   const href = project.link && project.link.trim() ? project.link.trim() : null
@@ -83,29 +99,43 @@ const createSeeMoreCard = () => `
   </a>
 `
 
+const createEntryCard = (entry) => {
+  const hasLink = entry.link && entry.link.trim()
+  const isExternal = hasLink && /^https?:\/\//i.test(entry.link.trim())
+
+  return `
+    <div class='entry_card'>
+      <div class='entry_card_header'>
+        <div class='entry_card_titles'>
+          <h3 class='entry_title'>${escapeHtml(entry.title)}</h3>
+          ${entry.subtitle     ? `<p class='entry_subtitle'>${escapeHtml(entry.subtitle)}</p>` : ''}
+          ${entry.organization ? `<p class='entry_org'>${escapeHtml(entry.organization)}</p>` : ''}
+        </div>
+        ${entry.date_range ? `<span class='entry_date'>${escapeHtml(entry.date_range)}</span>` : ''}
+      </div>
+      ${entry.description ? `<p class='entry_description'>${escapeHtml(entry.description)}</p>` : ''}
+      ${hasLink ? `<a href='${escapeHtml(entry.link.trim())}' class='entry_link' ${isExternal ? "target='_blank' rel='noopener noreferrer'" : ''}>View →</a>` : ''}
+    </div>
+  `
+}
+
+// ── Render functions ──────────────────────────────────────────────────────────
+
 const renderProjects = (items = []) => {
   const grid = getEl('projects_grid')
   if (!grid) return
 
   const visibleProjects = normalizeProjects(items)
-    .filter((project) => project.is_visible)
+    .filter((p) => p.is_visible)
     .sort((a, b) => a.sort_order - b.sort_order)
 
   if (!visibleProjects.length) {
-    grid.innerHTML = `
-      <article class='project_card'>
-        <h3>No projects yet</h3>
-        <p>Add projects from the admin dashboard.</p>
-      </article>
-    `
+    grid.innerHTML = `<article class='project_card'><h3>No projects yet</h3><p>Add projects from the admin dashboard.</p></article>`
     return
   }
 
-  const shownProjects = visibleProjects.slice(0, 5)
-  const cards = shownProjects.map(createProjectCard)
-
+  const cards = visibleProjects.slice(0, 5).map(createProjectCard)
   cards.push(createSeeMoreCard())
-
   grid.innerHTML = cards.join('')
 }
 
@@ -113,90 +143,105 @@ const renderPosts = (items = []) => {
   const grid = getEl('posts_grid')
   if (!grid) return
 
-  const publishedPosts = normalizePosts(items)
-    .filter((post) => post.is_published)
+  const published = normalizePosts(items)
+    .filter((p) => p.is_published)
     .sort((a, b) => a.sort_order - b.sort_order)
 
-  if (!publishedPosts.length) {
-    grid.innerHTML = `
-      <article class='project_card'>
-        <h3>No posts yet</h3>
-        <p>Add posts from the admin dashboard.</p>
-      </article>
-    `
+  if (!published.length) {
+    grid.innerHTML = `<article class='project_card'><h3>No posts yet</h3><p>Add posts from the admin dashboard.</p></article>`
     return
   }
 
-  grid.innerHTML = publishedPosts
-    .slice(0, 4)
-    .map(
-      (post) => `
-        <article class='project_card'>
-          <h3>${escapeHtml(post.title)}</h3>
-          <p>${escapeHtml(post.excerpt)}</p>
-        </article>
-      `
-    )
-    .join('')
+  grid.innerHTML = published.slice(0, 4).map((post) => `
+    <article class='project_card'>
+      <h3>${escapeHtml(post.title)}</h3>
+      <p>${escapeHtml(post.excerpt)}</p>
+    </article>
+  `).join('')
 }
 
 const renderResume = (items = []) => {
   const resumes = normalizeResumes(items)
-  const currentResume = resumes.find((resume) => resume.is_current) || resumes[0]
-
-  const textEl = getEl('current_resume_text')
-  const linkEl = getEl('current_resume_link')
-
+  const current = resumes.find((r) => r.is_current) || resumes[0]
+  const textEl  = getEl('current_resume_text')
+  const linkEl  = getEl('current_resume_link')
   if (!textEl || !linkEl) return
 
-  if (!currentResume) {
+  if (!current) {
     textEl.textContent = 'No resume available yet.'
     linkEl.style.display = 'none'
     return
   }
 
-  textEl.textContent = currentResume.title || 'Current Resume'
-
-  if (currentResume.file_url) {
-    linkEl.href = currentResume.file_url
+  textEl.textContent = current.title || 'Current Resume'
+  if (current.file_url) {
+    linkEl.href = current.file_url
     linkEl.style.display = 'inline-block'
   } else {
     linkEl.style.display = 'none'
   }
 }
 
+const renderEntries = (containerId, items = [], id_key, emptyMessage) => {
+  const container = getEl(containerId)
+  if (!container) return
+
+  const entries = normalizeEntries(items, id_key)
+    .sort((a, b) => a.sort_order - b.sort_order)
+
+  if (!entries.length) {
+    container.innerHTML = `<p class='entries_empty'>${emptyMessage}</p>`
+    return
+  }
+
+  container.innerHTML = entries.map(createEntryCard).join('')
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+
 const apiGet = async (id) => {
   const response = await fetch(`${API_BASE}/content/${id}`)
-  if (!response.ok) {
-    throw new Error(`Failed to load ${id}`)
-  }
+  if (!response.ok) throw new Error(`Failed to load ${id}`)
   return response.json()
 }
 
+const safeGet = async (id) => {
+  try { return await apiGet(id) }
+  catch { return { items: [] } }
+}
+
+// ── Load ──────────────────────────────────────────────────────────────────────
+
 const loadContent = async () => {
   try {
-    const [site, projects, posts, resumes] = await Promise.all([
+    const [site, projects, posts, resumes, work, academia, awards] = await Promise.all([
       apiGet('site'),
-      apiGet('projects'),
-      apiGet('posts'),
-      apiGet('resumes')
+      safeGet('projects'),
+      safeGet('posts'),
+      safeGet('resumes'),
+      safeGet('work'),
+      safeGet('academia'),
+      safeGet('awards'),
     ])
 
-    setText('title', site.title, 'Hi, I’m Nicky')
+    // Site content
+    setText('title',    site.title,    'Hi, I\'m Nicky')
     setText('subtitle', site.subtitle, 'Student • Developer • Builder')
-    setText('intro', site.intro, 'Welcome to my portfolio.')
-    setText('about', site.about, '')
-    setText('academia', site.academia, '')
-    setText('work', site.work, '')
-    setText('awards', site.awards, '')
-    setText('email', site.email, '')
+    setText('intro',    site.intro,    'Welcome to my portfolio.')
+    setText('about',    site.about,    '')
+    setText('email',    site.email,    '')
     setText('linkedin', site.linkedin, '')
-    setText('github', site.github, '')
-    setText('instagram', site.instagram, '')
+    setText('github',   site.github,   '')
+    setText('instagram',site.instagram,'')
 
+    // Structured sections
     renderProjects(projects.items || [])
     renderPosts(posts.items || [])
     renderResume(resumes.items || [])
+    renderEntries('work_grid',     work.items     || [], 'work_id',     'Work experience coming soon.')
+    renderEntries('academia_grid', academia.items || [], 'academia_id', 'Academic background coming soon.')
+    renderEntries('awards_grid',   awards.items   || [], 'awards_id',   'Awards and achievements coming soon.')
+
   } catch (error) {
     console.error('Failed to load portfolio content:', error)
   }
