@@ -1,15 +1,17 @@
-console.log('admin js loaded on', window.location.pathname)
-console.log('login_btn exists?', !!document.getElementById('login_btn'))
-console.log('site_form exists?', !!document.getElementById('site_form'))
-
 const API_BASE = 'https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod'
-const DEV_MODE = true
-const allowed_admin_email = 'nickysom@icloud.com'
+const COGNITO_DOMAIN = 'https://us-east-2jfof4gtel.auth.us-east-2.amazoncognito.com'
+const CLIENT_ID = '221248990609-15a2nsk7ulhveio09h2ccsfims4fc7ek.apps.googleusercontent.com'
+const REDIRECT_URI = 'https://nsportfolio.net/admin.html'
+const ALLOWED_ADMIN_EMAIL = 'nickysom@icloud.com'
+
+const SESSION_TOKEN_KEY = 'admin_id_token'
+const SESSION_EMAIL_KEY = 'admin_email'
+const SESSION_TIMER_KEY = 'admin_session_expires_at'
+const SESSION_MS = 5 * 60 * 1000
 
 const auth_status = document.getElementById('auth_status')
 const login_btn = document.getElementById('login_btn')
 const logout_btn = document.getElementById('logout_btn')
-const admin_content = document.getElementById('admin_content')
 const save_message = document.getElementById('save_message')
 const dashboard_shell = document.getElementById('dashboard_shell')
 const welcome_screen = document.getElementById('welcome_screen')
@@ -86,6 +88,7 @@ const reset_resume_btn = document.getElementById('reset_resume_btn')
 let projects_cache = []
 let posts_cache = []
 let resumes_cache = []
+let logout_timer = null
 
 const slugify = (value) =>
   value
@@ -121,13 +124,118 @@ const set_logged_out_view = () => {
   dashboard_shell.style.display = 'none'
 }
 
-const set_logged_in_view = (email = allowed_admin_email) => {
-  auth_status.textContent = `Signed in as ${email}`
-  sidebar_auth_text.textContent = `Signed in as ${email}`
+const set_logged_in_view = (email = '') => {
+  auth_status.textContent = email ? `Signed in as ${email}` : 'Signed in'
+  sidebar_auth_text.textContent = email ? `Signed in as ${email}` : 'Signed in'
   login_btn.style.display = 'none'
   logout_btn.style.display = 'inline-block'
   welcome_screen.style.display = 'none'
   dashboard_shell.style.display = 'grid'
+}
+
+const clear_local_session = () => {
+  sessionStorage.removeItem(SESSION_TOKEN_KEY)
+  sessionStorage.removeItem(SESSION_EMAIL_KEY)
+  sessionStorage.removeItem(SESSION_TIMER_KEY)
+
+  if (logout_timer) {
+    clearTimeout(logout_timer)
+    logout_timer = null
+  }
+}
+
+const parseJwt = (token) => {
+  try {
+    const payload = token.split('.')[1]
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((char) => `%${`00${char.charCodeAt(0).toString(16)}`.slice(-2)}`)
+        .join('')
+    )
+    return JSON.parse(json)
+  } catch (error) {
+    return null
+  }
+}
+
+const buildLogoutUrl = () =>
+  `${COGNITO_DOMAIN}/logout` +
+  `?client_id=${encodeURIComponent(CLIENT_ID)}` +
+  `&logout_uri=${encodeURIComponent(REDIRECT_URI)}`
+
+const end_session = (message = 'Signed out', redirectToCognito = false) => {
+  clear_local_session()
+  set_logged_out_view()
+  set_message(message)
+
+  if (redirectToCognito) {
+    window.location.href = buildLogoutUrl()
+  }
+}
+
+const schedule_auto_logout = () => {
+  if (logout_timer) clearTimeout(logout_timer)
+
+  const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0)
+  const remaining = expires_at - Date.now()
+
+  if (remaining <= 0) {
+    end_session('Session expired after 5 minutes', true)
+    return
+  }
+
+  logout_timer = setTimeout(() => {
+    end_session('Session expired after 5 minutes', true)
+  }, remaining)
+}
+
+const start_session = (token, email) => {
+  const expires_at = Date.now() + SESSION_MS
+  sessionStorage.setItem(SESSION_TOKEN_KEY, token)
+  sessionStorage.setItem(SESSION_EMAIL_KEY, email)
+  sessionStorage.setItem(SESSION_TIMER_KEY, String(expires_at))
+  set_logged_in_view(email)
+  schedule_auto_logout()
+}
+
+const handle_cognito_redirect = () => {
+  const hash = window.location.hash.replace(/^#/, '')
+  if (!hash) return false
+
+  const params = new URLSearchParams(hash)
+  const id_token = params.get('id_token')
+  if (!id_token) return false
+
+  const decoded = parseJwt(id_token)
+  const email = decoded?.email || ''
+
+  window.history.replaceState({}, document.title, window.location.pathname)
+
+  if (!email || email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+    end_session('This account is not allowed', true)
+    return false
+  }
+
+  start_session(id_token, email)
+  return true
+}
+
+const has_valid_session = () => {
+  const token = sessionStorage.getItem(SESSION_TOKEN_KEY)
+  const email = sessionStorage.getItem(SESSION_EMAIL_KEY)
+  const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0)
+
+  if (!token || !email || expires_at <= Date.now()) {
+    return false
+  }
+
+  if (email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
+    return false
+  }
+
+  return true
 }
 
 const api_get = async (id) => {
@@ -322,23 +430,22 @@ const load_dashboard_data = async () => {
 site_form.addEventListener('submit', async (event) => {
   event.preventDefault()
 
-  const payload = {
-    id: 'site',
-    title: site_fields.title.value.trim(),
-    subtitle: site_fields.subtitle.value.trim(),
-    intro: site_fields.intro.value.trim(),
-    about: site_fields.about.value.trim(),
-    academia: site_fields.academia.value.trim(),
-    work: site_fields.work.value.trim(),
-    awards: site_fields.awards.value.trim(),
-    email: site_fields.email.value.trim(),
-    linkedin: site_fields.linkedin.value.trim(),
-    github: site_fields.github.value.trim(),
-    instagram: site_fields.instagram.value.trim()
-  }
-
   try {
-    await api_put('site', payload)
+    await api_put('site', {
+      id: 'site',
+      title: site_fields.title.value.trim(),
+      subtitle: site_fields.subtitle.value.trim(),
+      intro: site_fields.intro.value.trim(),
+      about: site_fields.about.value.trim(),
+      academia: site_fields.academia.value.trim(),
+      work: site_fields.work.value.trim(),
+      awards: site_fields.awards.value.trim(),
+      email: site_fields.email.value.trim(),
+      linkedin: site_fields.linkedin.value.trim(),
+      github: site_fields.github.value.trim(),
+      instagram: site_fields.instagram.value.trim()
+    })
+
     set_message('Site content saved')
     await load_dashboard_data()
   } catch (error) {
@@ -352,7 +459,7 @@ project_form.addEventListener('submit', async (event) => {
 
   const id = project_fields.id.value || `project_${Date.now()}`
   const item = {
-    project_id: id,
+    id,
     title: project_fields.title.value.trim(),
     slug: project_fields.slug.value.trim() || slugify(project_fields.title.value),
     category: project_fields.category.value.trim(),
@@ -367,9 +474,9 @@ project_form.addEventListener('submit', async (event) => {
   const existing_index = projects_cache.findIndex((entry) => entry.id === id)
 
   if (existing_index >= 0) {
-    projects_cache[existing_index] = { id, ...item }
+    projects_cache[existing_index] = item
   } else {
-    projects_cache.push({ id, ...item })
+    projects_cache.push(item)
   }
 
   try {
@@ -405,7 +512,7 @@ post_form.addEventListener('submit', async (event) => {
 
   const id = post_fields.id.value || `post_${Date.now()}`
   const item = {
-    post_id: id,
+    id,
     title: post_fields.title.value.trim(),
     slug: post_fields.slug.value.trim() || slugify(post_fields.title.value),
     excerpt: post_fields.excerpt.value.trim(),
@@ -418,9 +525,9 @@ post_form.addEventListener('submit', async (event) => {
   const existing_index = posts_cache.findIndex((entry) => entry.id === id)
 
   if (existing_index >= 0) {
-    posts_cache[existing_index] = { id, ...item }
+    posts_cache[existing_index] = item
   } else {
-    posts_cache.push({ id, ...item })
+    posts_cache.push(item)
   }
 
   try {
@@ -462,7 +569,7 @@ resume_form.addEventListener('submit', async (event) => {
   }
 
   const item = {
-    resume_id: id,
+    id,
     title: resume_fields.title.value.trim(),
     file_name: resume_fields.file_name.value.trim(),
     file_url: resume_fields.file_url.value.trim(),
@@ -472,9 +579,9 @@ resume_form.addEventListener('submit', async (event) => {
   const existing_index = resumes_cache.findIndex((entry) => entry.id === id)
 
   if (existing_index >= 0) {
-    resumes_cache[existing_index] = { id, ...item }
+    resumes_cache[existing_index] = item
   } else {
-    resumes_cache.push({ id, ...item })
+    resumes_cache.push(item)
   }
 
   try {
@@ -538,6 +645,7 @@ document.addEventListener('click', async (event) => {
       const item = resumes_cache.find((entry) => entry.id === id)
       if (item) fill_resume_form(item)
     }
+    return
   }
 
   if (action === 'delete') {
@@ -608,20 +716,36 @@ document.addEventListener('click', async (event) => {
   }
 })
 
-login_btn.addEventListener('click', async () => {
-  if (!DEV_MODE) {
-    auth_status.textContent = 'Cognito login not connected yet'
-    return
-  }
+login_btn.addEventListener('click', () => {
+  clear_local_session()
 
-  set_logged_in_view()
-  set_message('Signed in')
-  await load_dashboard_data()
+  const loginUrl =
+    `${COGNITO_DOMAIN}/oauth2/authorize` +
+    `?identity_provider=Google` +
+    `&response_type=token` +
+    `&client_id=${encodeURIComponent(CLIENT_ID)}` +
+    `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+    `&scope=${encodeURIComponent('openid email profile')}` +
+    `&prompt=login`
+
+  window.location.href = loginUrl
 })
 
-logout_btn.addEventListener('click', async () => {
+logout_btn.addEventListener('click', () => {
+  end_session('Signed out', true)
+})
+
+const just_logged_in = handle_cognito_redirect()
+
+if (just_logged_in || has_valid_session()) {
+  const email = sessionStorage.getItem(SESSION_EMAIL_KEY) || ''
+  set_logged_in_view(email)
+  schedule_auto_logout()
+  load_dashboard_data().catch((error) => {
+    console.error(error)
+    set_message('Failed to load dashboard data')
+  })
+} else {
+  clear_local_session()
   set_logged_out_view()
-  set_message('Signed out')
-})
-
-set_logged_out_view()
+}
