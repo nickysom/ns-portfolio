@@ -260,22 +260,33 @@ const handle_cognito_redirect = async () => {
   const error = url.searchParams.get('error')
   const error_description = url.searchParams.get('error_description')
 
+  console.log('handle_cognito_redirect running')
+  console.log('code:', code)
+  console.log('error:', error)
+  console.log('error_description:', error_description)
+
   if (error) {
-    console.error('cognito error:', error, error_description)
     set_message(error_description || error)
     return false
   }
 
-  if (!code) return false
+  if (!code) {
+    return false
+  }
 
   const verifier = sessionStorage.getItem(PKCE_VERIFIER_KEY)
+  console.log('pkce verifier exists?', !!verifier)
+
   if (!verifier) {
     set_message('Missing login verifier. Please try signing in again.')
     return false
   }
 
   try {
+    console.log('exchanging code for tokens...')
     const tokens = await exchangeCodeForTokens(code, verifier)
+    console.log('token response:', tokens)
+
     const id_token = tokens.id_token
     const decoded = parseJwt(id_token)
     const email = decoded?.email || ''
@@ -292,7 +303,7 @@ const handle_cognito_redirect = async () => {
     }
 
     if (email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
-      end_session('This account is not allowed', true)
+      set_message(`Wrong account: ${email}`)
       return false
     }
 
