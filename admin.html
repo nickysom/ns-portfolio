@@ -7,7 +7,23 @@
   <link rel="stylesheet" href="styles/admin.css" />
 </head>
 <body>
-  <div class="dashboard_shell">
+  <section class="welcome_screen" id="welcome_screen">
+    <div class="welcome_card">
+      <p class="welcome_label">Portfolio Admin Portal</p>
+      <h1>Welcome back</h1>
+      <p class="welcome_text">
+        Sign in to manage your projects, posts, resume, and site content.
+      </p>
+
+      <div class="welcome_actions">
+        <button id="login_btn" type="button">Sign in with Google</button>
+      </div>
+
+      <p id="auth_status" class="welcome_status">Not signed in</p>
+    </div>
+  </section>
+
+  <div class="dashboard_shell" id="dashboard_shell">
     <aside class="dashboard_sidebar">
       <div class="sidebar_brand">
         <h1>Nicky Admin</h1>
@@ -15,9 +31,8 @@
       </div>
 
       <div class="sidebar_auth panel">
-        <p id="auth_status">Not signed in</p>
+        <p id="sidebar_auth_text">Signed in</p>
         <div class="auth_actions">
-          <button id="login_btn" type="button">Sign in with Google</button>
           <button id="logout_btn" type="button">Sign out</button>
         </div>
       </div>
