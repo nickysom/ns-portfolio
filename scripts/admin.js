@@ -1,3 +1,7 @@
+console.log('admin js loaded on', window.location.pathname)
+console.log('login_btn exists?', !!document.getElementById('login_btn'))
+console.log('site_form exists?', !!document.getElementById('site_form'))
+
 const API_BASE = 'https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod'
 const DEV_MODE = true
 const allowed_admin_email = 'nickysom@icloud.com'
