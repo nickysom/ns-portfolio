@@ -725,23 +725,33 @@ document.addEventListener('click', async (event) => {
 
   const { action, type, id } = button.dataset
 
+
   if (action === 'edit') {
-    if (type === 'projects') {
-      const item = projects_cache.find((entry) => entry.id === id)
-      if (item) fill_project_form(item)
-    }
+  console.log('edit clicked', { type, id })
+  console.log('projects_cache', projects_cache)
+  console.log('posts_cache', posts_cache)
+  console.log('resumes_cache', resumes_cache)
 
-    if (type === 'posts') {
-      const item = posts_cache.find((entry) => entry.id === id)
-      if (item) fill_post_form(item)
-    }
-
-    if (type === 'resumes') {
-      const item = resumes_cache.find((entry) => entry.id === id)
-      if (item) fill_resume_form(item)
-    }
-    return
+  if (type === 'projects') {
+    const item = projects_cache.find((entry) => entry.id === id)
+    console.log('project found', item)
+    if (item) fill_project_form(item)
   }
+
+  if (type === 'posts') {
+    const item = posts_cache.find((entry) => entry.id === id)
+    console.log('post found', item)
+    if (item) fill_post_form(item)
+  }
+
+  if (type === 'resumes') {
+    const item = resumes_cache.find((entry) => entry.id === id)
+    console.log('resume found', item)
+    if (item) fill_resume_form(item)
+  }
+
+  return
+}
 
   if (action === 'delete') {
     const ok = window.confirm('Delete this item?')
@@ -831,6 +841,9 @@ login_btn.addEventListener('click', async () => {
 })
 
 logout_btn.addEventListener('click', () => {
+  const confirmed = window.confirm('Are you sure you want to log out?')
+  if (!confirmed) return
+
   end_session('Signed out', true)
 })
 
