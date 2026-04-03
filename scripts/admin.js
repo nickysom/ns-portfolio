@@ -1,6 +1,6 @@
 const API_BASE = 'https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod'
 const COGNITO_DOMAIN = 'https://us-east-2jfof4gtel.auth.us-east-2.amazoncognito.com'
-const CLIENT_ID = '221248990609-15a2nsk7ulhveio09h2ccsfims4fc7ek.apps.googleusercontent.com'
+const CLIENT_ID = '5iaear77vsftb0fupep3mics45'
 const REDIRECT_URI = 'https://nsportfolio.net/admin.html'
 const ALLOWED_ADMIN_EMAIL = 'nickysom@icloud.com'
 
