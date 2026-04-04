@@ -8,7 +8,7 @@ const SESSION_TOKEN_KEY = "admin_id_token";
 const SESSION_EMAIL_KEY = "admin_email";
 const SESSION_TIMER_KEY = "admin_session_expires_at";
 const PKCE_VERIFIER_KEY = "pkce_code_verifier";
-const SESSION_MS = 5 * 60 * 1000;
+const SESSION_MS = 30 * 60 * 1000; // 30 minutes session for better security (can be adjusted as needed)
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
