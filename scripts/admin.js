@@ -9,6 +9,9 @@ const SESSION_EMAIL_KEY = "admin_email";
 const SESSION_TIMER_KEY = "admin_session_expires_at";
 const PKCE_VERIFIER_KEY = "pkce_code_verifier";
 const SESSION_MS = 30 * 60 * 1000; // 30 minutes session for better security (can be adjusted as needed)
+const WARNING_MS = 2 * 60 * 1000; // Show warning 2 minutes before session expires
+
+let warning_timer = null // Timer for session expiration warning
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
@@ -221,12 +224,37 @@ const end_session = (message = "Signed out", redirectToCognito = false) => {
 };
 
 const schedule_auto_logout = () => {
-  if (logout_timer) clearTimeout(logout_timer);
-  const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0);
-  const remaining = expires_at - Date.now();
-  if (remaining <= 0) { end_session("Session expired after 5 minutes", true); return; }
-  logout_timer = setTimeout(() => end_session("Session expired after 5 minutes", true), remaining);
-};
+  if (logout_timer) clearTimeout(logout_timer)
+  if (warning_timer) clearTimeout(warning_timer)
+
+  const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0)
+  const remaining = expires_at - Date.now()
+
+  if (remaining <= 0) {
+    end_session('Session expired', true)
+    return
+  }
+
+  const warning_time = remaining - WARNING_MS
+
+  if (warning_time > 0) {
+    warning_timer = setTimeout(() => {
+      const stay_signed_in = window.confirm(
+        'Your session will expire in 2 minutes. Press OK to stay signed in or Cancel to log out.'
+      )
+
+      if (stay_signed_in) {
+        extend_session()
+      } else {
+        end_session('Signed out', true)
+      }
+    }, warning_time)
+  }
+
+  logout_timer = setTimeout(() => {
+    end_session('Session expired', true)
+  }, remaining)
+}
 
 const start_session = (token, email) => {
   const expires_at = Date.now() + SESSION_MS;
