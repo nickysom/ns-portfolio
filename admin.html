@@ -129,11 +129,29 @@
       margin-bottom: 24px;
     }
 
+    /* Split layout — form hidden by default, shown when .form_open is added */
     .dashboard_split {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 24px;
       align-items: start;
+    }
+
+    .dashboard_split.form_open {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .entry_form_panel {
+      display: none;
+    }
+
+    .dashboard_split.form_open .entry_form_panel {
+      display: grid;
+    }
+
+    /* Projects / posts / resumes always show their form */
+    .dashboard_split.always_split {
+      grid-template-columns: 1fr 1fr;
     }
 
     .item_card_top {
@@ -159,7 +177,27 @@
       background: var(--surface, #f1f5f9);
       border-radius: 4px;
       padding: 1px 6px;
-      margin-top: 2px;
+      margin-left: 4px;
+    }
+
+    .item_category_badge {
+      display: inline-block;
+      font-size: 11px;
+      color: var(--accent-dark, #9f1248);
+      background: var(--accent-pale, rgba(194,24,91,0.08));
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 4px;
+    }
+
+    .item_hidden_badge {
+      display: inline-block;
+      font-size: 11px;
+      color: #64748b;
+      background: #f1f5f9;
+      border-radius: 4px;
+      padding: 1px 6px;
+      margin-left: 4px;
     }
 
     .nav_tab.active { font-weight: 600; }
@@ -258,7 +296,7 @@
       <!-- PROJECTS -->
       <section class="dashboard_tab" id="projects_tab">
         <div class="page_header"><h2>Projects</h2><p>Add, edit, hide, or delete projects.</p></div>
-        <div class="dashboard_split">
+        <div class="dashboard_split always_split">
           <div class="panel list_panel">
             <div class="list_header"><h3>All Projects</h3><button id="new_project_btn" type="button">New Project</button></div>
             <div id="projects_list" class="item_list"></div>
@@ -287,7 +325,7 @@
       <!-- POSTS -->
       <section class="dashboard_tab" id="posts_tab">
         <div class="page_header"><h2>Posts</h2><p>Create and manage updates or blog posts.</p></div>
-        <div class="dashboard_split">
+        <div class="dashboard_split always_split">
           <div class="panel list_panel">
             <div class="list_header"><h3>All Posts</h3><button id="new_post_btn" type="button">New Post</button></div>
             <div id="posts_list" class="item_list"></div>
@@ -312,7 +350,7 @@
       <!-- RESUMES -->
       <section class="dashboard_tab" id="resumes_tab">
         <div class="page_header"><h2>Resumes</h2><p>Store resume metadata and current resume links.</p></div>
-        <div class="dashboard_split">
+        <div class="dashboard_split always_split">
           <div class="panel list_panel">
             <div class="list_header"><h3>All Resumes</h3><button id="new_resume_btn" type="button">New Resume</button></div>
             <div id="resumes_list" class="item_list"></div>
@@ -333,24 +371,36 @@
 
       <!-- WORK -->
       <section class="dashboard_tab" id="work_tab">
-        <div class="page_header"><h2>Work</h2><p>Add and manage your work experience entries.</p></div>
-        <div class="dashboard_split">
+        <div class="page_header">
+          <h2>Work</h2>
+          <p>Add and manage work entries. Entries with the same Organization are grouped together on the public site.</p>
+        </div>
+        <div class="dashboard_split" id="work_split">
           <div class="panel list_panel">
             <div class="list_header"><h3>All Work Entries</h3><button id="new_work_btn" type="button">New Entry</button></div>
             <div id="work_list" class="item_list"></div>
           </div>
-          <form id="work_form" class="panel form_panel">
+          <form id="work_form" class="panel form_panel entry_form_panel">
             <input id="work_id" type="hidden" />
-            <div class="form_group"><label for="work_title">Title</label><input id="work_title" type="text" required placeholder="e.g. Software Engineer" /></div>
-            <div class="form_group"><label for="work_subtitle">Subtitle / Role</label><input id="work_subtitle" type="text" placeholder="e.g. Full-time" /></div>
+            <div class="form_group"><label for="work_title">Job Title</label><input id="work_title" type="text" required placeholder="e.g. Software Engineer" /></div>
+            <div class="form_group">
+              <label for="work_category">Category</label>
+              <input id="work_category" type="text" placeholder="e.g. Full-time, Internship, Promotion, Transfer" />
+            </div>
             <div class="form_group"><label for="work_organization">Organization</label><input id="work_organization" type="text" placeholder="e.g. Acme Corp" /></div>
             <div class="form_group"><label for="work_date_range">Date / Year Range</label><input id="work_date_range" type="text" placeholder="e.g. 2022 – Present" /></div>
-            <div class="form_group"><label for="work_sort_order">Sort Order</label><input id="work_sort_order" type="number" value="1" min="1" /></div>
+            <div class="form_group">
+              <label for="work_sort_order">Sort Order <small style="font-weight:400;color:var(--text-muted)">(1 = newest, shown first)</small></label>
+              <input id="work_sort_order" type="number" value="1" min="1" />
+            </div>
             <div class="form_group"><label for="work_link">Link</label><input id="work_link" type="text" placeholder="https://" /></div>
             <div class="form_group full_width"><label for="work_description">Description</label><textarea id="work_description" rows="5"></textarea></div>
+            <div class="form_group checkbox_group">
+              <label><input id="work_is_visible" type="checkbox" checked /> Visible on site</label>
+            </div>
             <div class="form_actions">
               <button type="submit">Save Entry</button>
-              <button id="reset_work_btn" type="button" class="secondary_btn">Clear</button>
+              <button id="reset_work_btn" type="button" class="secondary_btn">Cancel</button>
             </div>
           </form>
         </div>
@@ -359,12 +409,12 @@
       <!-- ACADEMIA -->
       <section class="dashboard_tab" id="academia_tab">
         <div class="page_header"><h2>Academia</h2><p>Add and manage your academic history entries.</p></div>
-        <div class="dashboard_split">
+        <div class="dashboard_split" id="academia_split">
           <div class="panel list_panel">
             <div class="list_header"><h3>All Academia Entries</h3><button id="new_academia_btn" type="button">New Entry</button></div>
             <div id="academia_list" class="item_list"></div>
           </div>
-          <form id="academia_form" class="panel form_panel">
+          <form id="academia_form" class="panel form_panel entry_form_panel">
             <input id="academia_id" type="hidden" />
             <div class="form_group"><label for="academia_title">Title</label><input id="academia_title" type="text" required placeholder="e.g. B.S. Computer Science" /></div>
             <div class="form_group"><label for="academia_subtitle">Subtitle / Role</label><input id="academia_subtitle" type="text" placeholder="e.g. Minor in Mathematics" /></div>
@@ -373,9 +423,12 @@
             <div class="form_group"><label for="academia_sort_order">Sort Order</label><input id="academia_sort_order" type="number" value="1" min="1" /></div>
             <div class="form_group"><label for="academia_link">Link</label><input id="academia_link" type="text" placeholder="https://" /></div>
             <div class="form_group full_width"><label for="academia_description">Description</label><textarea id="academia_description" rows="5"></textarea></div>
+            <div class="form_group checkbox_group">
+              <label><input id="academia_is_visible" type="checkbox" checked /> Visible on site</label>
+            </div>
             <div class="form_actions">
               <button type="submit">Save Entry</button>
-              <button id="reset_academia_btn" type="button" class="secondary_btn">Clear</button>
+              <button id="reset_academia_btn" type="button" class="secondary_btn">Cancel</button>
             </div>
           </form>
         </div>
@@ -384,12 +437,12 @@
       <!-- AWARDS -->
       <section class="dashboard_tab" id="awards_tab">
         <div class="page_header"><h2>Awards</h2><p>Add and manage your awards and recognition entries.</p></div>
-        <div class="dashboard_split">
+        <div class="dashboard_split" id="awards_split">
           <div class="panel list_panel">
             <div class="list_header"><h3>All Awards Entries</h3><button id="new_awards_btn" type="button">New Entry</button></div>
             <div id="awards_list" class="item_list"></div>
           </div>
-          <form id="awards_form" class="panel form_panel">
+          <form id="awards_form" class="panel form_panel entry_form_panel">
             <input id="awards_id" type="hidden" />
             <div class="form_group"><label for="awards_title">Title</label><input id="awards_title" type="text" required placeholder="e.g. Best Paper Award" /></div>
             <div class="form_group"><label for="awards_subtitle">Subtitle / Role</label><input id="awards_subtitle" type="text" placeholder="e.g. First Place" /></div>
@@ -398,9 +451,12 @@
             <div class="form_group"><label for="awards_sort_order">Sort Order</label><input id="awards_sort_order" type="number" value="1" min="1" /></div>
             <div class="form_group"><label for="awards_link">Link</label><input id="awards_link" type="text" placeholder="https://" /></div>
             <div class="form_group full_width"><label for="awards_description">Description</label><textarea id="awards_description" rows="5"></textarea></div>
+            <div class="form_group checkbox_group">
+              <label><input id="awards_is_visible" type="checkbox" checked /> Visible on site</label>
+            </div>
             <div class="form_actions">
               <button type="submit">Save Entry</button>
-              <button id="reset_awards_btn" type="button" class="secondary_btn">Clear</button>
+              <button id="reset_awards_btn" type="button" class="secondary_btn">Cancel</button>
             </div>
           </form>
         </div>

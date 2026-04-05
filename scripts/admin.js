@@ -8,10 +8,10 @@ const SESSION_TOKEN_KEY = "admin_id_token";
 const SESSION_EMAIL_KEY = "admin_email";
 const SESSION_TIMER_KEY = "admin_session_expires_at";
 const PKCE_VERIFIER_KEY = "pkce_code_verifier";
-const SESSION_MS = 30 * 60 * 1000; // 30 minutes session for better security (can be adjusted as needed)
-const WARNING_MS = 2 * 60 * 1000; // Show warning 2 minutes before session expires
+const SESSION_MS = 30 * 60 * 1000;
+const WARNING_MS = 2 * 60 * 1000;
 
-let warning_timer = null // Timer for session expiration warning
+let warning_timer = null;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 
@@ -99,16 +99,18 @@ const resume_fields = {
 };
 const reset_resume_btn = document.getElementById("reset_resume_btn");
 
+// Work has category instead of subtitle, plus is_visible
 const work_form   = document.getElementById("work_form");
 const work_fields = {
   id:           document.getElementById("work_id"),
   title:        document.getElementById("work_title"),
-  subtitle:     document.getElementById("work_subtitle"),
+  category:     document.getElementById("work_category"),
   organization: document.getElementById("work_organization"),
   date_range:   document.getElementById("work_date_range"),
   description:  document.getElementById("work_description"),
   link:         document.getElementById("work_link"),
   sort_order:   document.getElementById("work_sort_order"),
+  is_visible:   document.getElementById("work_is_visible"),
 };
 const reset_work_btn = document.getElementById("reset_work_btn");
 
@@ -122,6 +124,7 @@ const academia_fields = {
   description:  document.getElementById("academia_description"),
   link:         document.getElementById("academia_link"),
   sort_order:   document.getElementById("academia_sort_order"),
+  is_visible:   document.getElementById("academia_is_visible"),
 };
 const reset_academia_btn = document.getElementById("reset_academia_btn");
 
@@ -135,8 +138,14 @@ const awards_fields = {
   description:  document.getElementById("awards_description"),
   link:         document.getElementById("awards_link"),
   sort_order:   document.getElementById("awards_sort_order"),
+  is_visible:   document.getElementById("awards_is_visible"),
 };
 const reset_awards_btn = document.getElementById("reset_awards_btn");
+
+// Split panel elements for form show/hide
+const work_split     = document.getElementById("work_split");
+const academia_split = document.getElementById("academia_split");
+const awards_split   = document.getElementById("awards_split");
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -157,6 +166,11 @@ const show_toast = (text, is_error = false) => {
   if (toast_timeout) clearTimeout(toast_timeout);
   toast_timeout = setTimeout(() => { toast_el.className = ""; }, 3000);
 };
+
+// ── Form panel show/hide ──────────────────────────────────────────────────────
+
+const open_form = (split_el) => split_el.classList.add("form_open");
+const close_form = (split_el) => split_el.classList.remove("form_open");
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -200,6 +214,7 @@ const clear_local_session = () => {
   sessionStorage.removeItem(SESSION_TIMER_KEY);
   sessionStorage.removeItem(PKCE_VERIFIER_KEY);
   if (logout_timer) { clearTimeout(logout_timer); logout_timer = null; }
+  if (warning_timer) { clearTimeout(warning_timer); warning_timer = null; }
 };
 
 const parseJwt = (token) => {
@@ -223,38 +238,32 @@ const end_session = (message = "Signed out", redirectToCognito = false) => {
   if (redirectToCognito) window.location.href = buildLogoutUrl();
 };
 
+const extend_session = () => {
+  const expires_at = Date.now() + SESSION_MS;
+  sessionStorage.setItem(SESSION_TIMER_KEY, String(expires_at));
+  schedule_auto_logout();
+  show_toast("Session extended ✓");
+};
+
 const schedule_auto_logout = () => {
-  if (logout_timer) clearTimeout(logout_timer)
-  if (warning_timer) clearTimeout(warning_timer)
+  if (logout_timer) clearTimeout(logout_timer);
+  if (warning_timer) clearTimeout(warning_timer);
 
-  const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0)
-  const remaining = expires_at - Date.now()
+  const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0);
+  const remaining = expires_at - Date.now();
 
-  if (remaining <= 0) {
-    end_session('Session expired', true)
-    return
-  }
+  if (remaining <= 0) { end_session("Session expired", true); return; }
 
-  const warning_time = remaining - WARNING_MS
-
+  const warning_time = remaining - WARNING_MS;
   if (warning_time > 0) {
     warning_timer = setTimeout(() => {
-      const stay_signed_in = window.confirm(
-        'Your session will expire in 2 minutes. Press OK to stay signed in or Cancel to log out.'
-      )
-
-      if (stay_signed_in) {
-        extend_session()
-      } else {
-        end_session('Signed out', true)
-      }
-    }, warning_time)
+      const stay = window.confirm("Your session will expire in 2 minutes. Press OK to stay signed in.");
+      if (stay) { extend_session(); } else { end_session("Signed out", true); }
+    }, warning_time);
   }
 
-  logout_timer = setTimeout(() => {
-    end_session('Session expired', true)
-  }, remaining)
-}
+  logout_timer = setTimeout(() => end_session("Session expired", true), remaining);
+};
 
 const start_session = (token, email) => {
   const expires_at = Date.now() + SESSION_MS;
@@ -306,8 +315,6 @@ const handle_cognito_redirect = async () => {
   const error = url.searchParams.get("error");
   const error_description = url.searchParams.get("error_description");
 
-  console.log("handle_cognito_redirect running");
-
   if (error) { show_toast(error_description || error, true); return false; }
   if (!code) return false;
 
@@ -336,8 +343,6 @@ const handle_cognito_redirect = async () => {
 };
 
 // ── API ───────────────────────────────────────────────────────────────────────
-// NOTE: The GET Lambda already unmarshalls DynamoDB format into plain JSON,
-// so we use the response data directly — no extra unmarshalling needed here.
 
 const api_get = async (id) => {
   const response = await fetch(`${API_BASE}/content/${id}`);
@@ -355,7 +360,6 @@ const api_put = async (id, payload) => {
   return response.json();
 };
 
-// Safely fetch a content key — returns { items: [] } if missing (404)
 const safe_get = async (id) => {
   try { return await api_get(id); }
   catch { return { items: [] }; }
@@ -398,6 +402,21 @@ const normalize_resumes = (items = []) =>
     is_current: !!item.is_current,
   }));
 
+// Work uses category (not subtitle) and has is_visible
+const normalize_work = (items = []) =>
+  items.map((item, i) => ({
+    id:           item.work_id || "",
+    title:        item.title || "",
+    category:     item.category || "",
+    organization: item.organization || "",
+    date_range:   item.date_range || "",
+    description:  item.description || "",
+    link:         item.link || "",
+    sort_order:   Number(item.sort_order ?? i + 1),
+    is_visible:   item.is_visible !== false,
+  }));
+
+// Academia and awards use subtitle and is_visible
 const normalize_entries = (items = [], id_key) =>
   items.map((item, i) => ({
     id:           item[id_key] || "",
@@ -408,6 +427,7 @@ const normalize_entries = (items = [], id_key) =>
     description:  item.description || "",
     link:         item.link || "",
     sort_order:   Number(item.sort_order ?? i + 1),
+    is_visible:   item.is_visible !== false,
   }));
 
 // ── Render ────────────────────────────────────────────────────────────────────
@@ -419,22 +439,35 @@ const render_list = (container, items, type) => {
   }
 
   container.innerHTML = items.map((item) => {
+    const is_entry_type = ["work", "academia", "awards"].includes(type);
+
     const status_text =
       type === "projects" ? (item.is_visible  ? "Visible"   : "Hidden")   :
       type === "posts"    ? (item.is_published ? "Published" : "Draft")    :
       type === "resumes"  ? (item.is_current   ? "Current"   : "Archived") :
       item.date_range || "";
 
-    const sort_label = item.sort_order != null
-      ? `<span class='item_sort_badge'>#${item.sort_order}</span>`
+    const sort_badge = `<span class='item_sort_badge'>#${item.sort_order}</span>`;
+
+    const visibility_badge = is_entry_type && !item.is_visible
+      ? `<span class='item_hidden_badge'>Hidden</span>`
+      : "";
+
+    const category_badge = type === "work" && item.category
+      ? `<span class='item_category_badge'>${item.category}</span>`
+      : "";
+
+    const subtitle_line = item.organization
+      ? `<p style="font-size:12px;color:var(--text-muted)">${item.organization}</p>`
       : "";
 
     return `
       <div class='item_card'>
         <div class='item_card_top'>
           <div>
-            <h4>${item.title || "Untitled"}</h4>
-            <p>${status_text} ${sort_label}</p>
+            <h4>${item.title || "Untitled"}${category_badge}${visibility_badge}</h4>
+            ${subtitle_line}
+            <p>${status_text} ${sort_badge}</p>
           </div>
           <div class='item_actions'>
             <button type='button' data-action='edit'   data-type='${type}' data-id='${item.id}'>Edit</button>
@@ -489,15 +522,30 @@ const clear_resume_form = () => {
   resume_fields.is_current.checked  = false;
 };
 
-const clear_entry_form = (fields, cache) => {
+const clear_work_form = () => {
+  work_fields.id.value           = "";
+  work_fields.title.value        = "";
+  work_fields.category.value     = "";
+  work_fields.organization.value = "";
+  work_fields.date_range.value   = "";
+  work_fields.description.value  = "";
+  work_fields.link.value         = "";
+  work_fields.sort_order.value   = work_cache.length + 1;
+  work_fields.is_visible.checked = true;
+  close_form(work_split);
+};
+
+const clear_entry_form = (fields, cache, split_el) => {
   fields.id.value           = "";
   fields.title.value        = "";
-  fields.subtitle.value     = "";
+  if (fields.subtitle) fields.subtitle.value = "";
   fields.organization.value = "";
   fields.date_range.value   = "";
   fields.description.value  = "";
   fields.link.value         = "";
   fields.sort_order.value   = cache.length + 1;
+  fields.is_visible.checked = true;
+  if (split_el) close_form(split_el);
 };
 
 // ── Fill forms ────────────────────────────────────────────────────────────────
@@ -537,16 +585,32 @@ const fill_resume_form = (item) => {
   switch_tab("resumes_tab");
 };
 
-const fill_entry_form = (fields, item, tab_id) => {
+const fill_work_form = (item) => {
+  work_fields.id.value           = item.id;
+  work_fields.title.value        = item.title || "";
+  work_fields.category.value     = item.category || "";
+  work_fields.organization.value = item.organization || "";
+  work_fields.date_range.value   = item.date_range || "";
+  work_fields.description.value  = item.description || "";
+  work_fields.link.value         = item.link || "";
+  work_fields.sort_order.value   = item.sort_order ?? 1;
+  work_fields.is_visible.checked = item.is_visible !== false;
+  switch_tab("work_tab");
+  open_form(work_split);
+};
+
+const fill_entry_form = (fields, item, tab_id, split_el) => {
   fields.id.value           = item.id;
   fields.title.value        = item.title || "";
-  fields.subtitle.value     = item.subtitle || "";
+  if (fields.subtitle) fields.subtitle.value = item.subtitle || "";
   fields.organization.value = item.organization || "";
   fields.date_range.value   = item.date_range || "";
   fields.description.value  = item.description || "";
   fields.link.value         = item.link || "";
   fields.sort_order.value   = item.sort_order ?? 1;
+  fields.is_visible.checked = item.is_visible !== false;
   switch_tab(tab_id);
+  open_form(split_el);
 };
 
 // ── API save helpers ──────────────────────────────────────────────────────────
@@ -554,37 +618,33 @@ const fill_entry_form = (fields, item, tab_id) => {
 const save_projects = () =>
   api_put("projects", {
     id: "projects",
-    items: [...projects_cache]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((p) => ({
-        project_id:  p.id,
-        title:       p.title,
-        slug:        p.slug,
-        category:    p.category,
-        description: p.description,
-        link:        p.link,
-        image_url:   p.image_url,
-        is_visible:  p.is_visible,
-        is_featured: p.is_featured,
-        sort_order:  p.sort_order,
-      })),
+    items: [...projects_cache].sort((a, b) => a.sort_order - b.sort_order).map((p) => ({
+      project_id:  p.id,
+      title:       p.title,
+      slug:        p.slug,
+      category:    p.category,
+      description: p.description,
+      link:        p.link,
+      image_url:   p.image_url,
+      is_visible:  p.is_visible,
+      is_featured: p.is_featured,
+      sort_order:  p.sort_order,
+    })),
   });
 
 const save_posts = () =>
   api_put("posts", {
     id: "posts",
-    items: [...posts_cache]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((p) => ({
-        post_id:         p.id,
-        title:           p.title,
-        slug:            p.slug,
-        excerpt:         p.excerpt,
-        content:         p.content,
-        cover_image_url: p.cover_image_url,
-        is_published:    p.is_published,
-        sort_order:      p.sort_order,
-      })),
+    items: [...posts_cache].sort((a, b) => a.sort_order - b.sort_order).map((p) => ({
+      post_id:         p.id,
+      title:           p.title,
+      slug:            p.slug,
+      excerpt:         p.excerpt,
+      content:         p.content,
+      cover_image_url: p.cover_image_url,
+      is_published:    p.is_published,
+      sort_order:      p.sort_order,
+    })),
   });
 
 const save_resumes = () =>
@@ -599,27 +659,41 @@ const save_resumes = () =>
     })),
   });
 
+const save_work = () =>
+  api_put("work", {
+    id: "work",
+    items: [...work_cache].sort((a, b) => a.sort_order - b.sort_order).map((entry) => ({
+      work_id:      entry.id,
+      title:        entry.title,
+      category:     entry.category,
+      organization: entry.organization,
+      date_range:   entry.date_range,
+      description:  entry.description,
+      link:         entry.link,
+      sort_order:   entry.sort_order,
+      is_visible:   entry.is_visible,
+    })),
+  });
+
 const save_entries = (section_key, cache, id_key) =>
   api_put(section_key, {
     id: section_key,
-    items: [...cache]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((entry) => ({
-        [id_key]:     entry.id,
-        title:        entry.title,
-        subtitle:     entry.subtitle,
-        organization: entry.organization,
-        date_range:   entry.date_range,
-        description:  entry.description,
-        link:         entry.link,
-        sort_order:   entry.sort_order,
-      })),
+    items: [...cache].sort((a, b) => a.sort_order - b.sort_order).map((entry) => ({
+      [id_key]:     entry.id,
+      title:        entry.title,
+      subtitle:     entry.subtitle,
+      organization: entry.organization,
+      date_range:   entry.date_range,
+      description:  entry.description,
+      link:         entry.link,
+      sort_order:   entry.sort_order,
+      is_visible:   entry.is_visible,
+    })),
   });
 
 // ── Load data ─────────────────────────────────────────────────────────────────
 
 const load_site_content = async () => {
-  // api_get already returns plain JSON (GET Lambda unmarshalls DynamoDB format)
   const data = await api_get("site");
   Object.keys(site_fields).forEach((key) => {
     site_fields[key].value = data[key] || "";
@@ -642,7 +716,7 @@ const load_dashboard_data = async () => {
   projects_cache = normalize_projects(projects_data.items || []).sort((a, b) => a.sort_order - b.sort_order);
   posts_cache    = normalize_posts(posts_data.items || []).sort((a, b) => a.sort_order - b.sort_order);
   resumes_cache  = normalize_resumes(resumes_data.items || []);
-  work_cache     = normalize_entries(work_data.items || [],     "work_id").sort((a, b) => a.sort_order - b.sort_order);
+  work_cache     = normalize_work(work_data.items || []).sort((a, b) => a.sort_order - b.sort_order);
   academia_cache = normalize_entries(academia_data.items || [], "academia_id").sort((a, b) => a.sort_order - b.sort_order);
   awards_cache   = normalize_entries(awards_data.items || [],   "awards_id").sort((a, b) => a.sort_order - b.sort_order);
 
@@ -673,10 +747,7 @@ site_form.addEventListener("submit", async (event) => {
     });
     show_toast("Site content saved ✓");
     await load_dashboard_data();
-  } catch (err) {
-    console.error(err);
-    show_toast("Failed to save site content", true);
-  }
+  } catch (err) { console.error(err); show_toast("Failed to save site content", true); }
 });
 
 project_form.addEventListener("submit", async (event) => {
@@ -702,10 +773,7 @@ project_form.addEventListener("submit", async (event) => {
     clear_project_form();
     show_toast(existing_index >= 0 ? "Project updated ✓" : "Project created ✓");
     await load_dashboard_data();
-  } catch (err) {
-    console.error(err);
-    show_toast("Failed to save project", true);
-  }
+  } catch (err) { console.error(err); show_toast("Failed to save project", true); }
 });
 
 post_form.addEventListener("submit", async (event) => {
@@ -729,10 +797,7 @@ post_form.addEventListener("submit", async (event) => {
     clear_post_form();
     show_toast(existing_index >= 0 ? "Post updated ✓" : "Post created ✓");
     await load_dashboard_data();
-  } catch (err) {
-    console.error(err);
-    show_toast("Failed to save post", true);
-  }
+  } catch (err) { console.error(err); show_toast("Failed to save post", true); }
 });
 
 resume_form.addEventListener("submit", async (event) => {
@@ -756,58 +821,91 @@ resume_form.addEventListener("submit", async (event) => {
     clear_resume_form();
     show_toast(existing_index >= 0 ? "Resume updated ✓" : "Resume created ✓");
     await load_dashboard_data();
-  } catch (err) {
-    console.error(err);
-    show_toast("Failed to save resume", true);
-  }
+  } catch (err) { console.error(err); show_toast("Failed to save resume", true); }
 });
 
-const handle_entry_submit = async (event, fields, cache_ref, section_key, id_key) => {
+work_form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const id = work_fields.id.value || `work_${Date.now()}`;
+  const item = {
+    id,
+    title:        work_fields.title.value.trim(),
+    category:     work_fields.category.value.trim(),
+    organization: work_fields.organization.value.trim(),
+    date_range:   work_fields.date_range.value.trim(),
+    description:  work_fields.description.value.trim(),
+    link:         work_fields.link.value.trim(),
+    sort_order:   Number(work_fields.sort_order.value || 1),
+    is_visible:   work_fields.is_visible.checked,
+  };
+  const existing_index = work_cache.findIndex((e) => e.id === id);
+  if (existing_index >= 0) { work_cache[existing_index] = item; }
+  else { work_cache.push(item); }
+  try {
+    await save_work();
+    clear_work_form();
+    show_toast(existing_index >= 0 ? "Work entry updated ✓" : "Work entry created ✓");
+    await load_dashboard_data();
+  } catch (err) { console.error(err); show_toast("Failed to save work entry", true); }
+});
+
+const handle_entry_submit = async (event, fields, cache_ref, section_key, id_key, split_el) => {
   event.preventDefault();
   const id = fields.id.value || `${section_key}_${Date.now()}`;
   const item = {
     id,
     title:        fields.title.value.trim(),
-    subtitle:     fields.subtitle.value.trim(),
+    subtitle:     fields.subtitle?.value.trim() || "",
     organization: fields.organization.value.trim(),
     date_range:   fields.date_range.value.trim(),
     description:  fields.description.value.trim(),
     link:         fields.link.value.trim(),
     sort_order:   Number(fields.sort_order.value || 1),
+    is_visible:   fields.is_visible.checked,
   };
   const existing_index = cache_ref.findIndex((e) => e.id === id);
   if (existing_index >= 0) { cache_ref[existing_index] = item; }
   else { cache_ref.push(item); }
   try {
     await save_entries(section_key, cache_ref, id_key);
-    clear_entry_form(fields, cache_ref);
+    clear_entry_form(fields, cache_ref, split_el);
     show_toast(existing_index >= 0 ? `${section_key} entry updated ✓` : `${section_key} entry created ✓`);
     await load_dashboard_data();
-  } catch (err) {
-    console.error(err);
-    show_toast(`Failed to save ${section_key} entry`, true);
-  }
+  } catch (err) { console.error(err); show_toast(`Failed to save ${section_key} entry`, true); }
 };
 
-work_form.addEventListener("submit",     (e) => handle_entry_submit(e, work_fields,     work_cache,     "work",     "work_id"));
-academia_form.addEventListener("submit", (e) => handle_entry_submit(e, academia_fields, academia_cache, "academia", "academia_id"));
-awards_form.addEventListener("submit",   (e) => handle_entry_submit(e, awards_fields,   awards_cache,   "awards",   "awards_id"));
+academia_form.addEventListener("submit", (e) => handle_entry_submit(e, academia_fields, academia_cache, "academia", "academia_id", academia_split));
+awards_form.addEventListener("submit",   (e) => handle_entry_submit(e, awards_fields,   awards_cache,   "awards",   "awards_id",   awards_split));
 
 // ── New / reset buttons ───────────────────────────────────────────────────────
 
-new_project_btn.addEventListener("click",  () => { clear_project_form();                             switch_tab("projects_tab"); });
-new_post_btn.addEventListener("click",     () => { clear_post_form();                                switch_tab("posts_tab"); });
-new_resume_btn.addEventListener("click",   () => { clear_resume_form();                              switch_tab("resumes_tab"); });
-new_work_btn.addEventListener("click",     () => { clear_entry_form(work_fields,     work_cache);     switch_tab("work_tab"); });
-new_academia_btn.addEventListener("click", () => { clear_entry_form(academia_fields, academia_cache); switch_tab("academia_tab"); });
-new_awards_btn.addEventListener("click",   () => { clear_entry_form(awards_fields,   awards_cache);   switch_tab("awards_tab"); });
+new_project_btn.addEventListener("click",  clear_project_form);
+new_post_btn.addEventListener("click",     clear_post_form);
+new_resume_btn.addEventListener("click",   clear_resume_form);
+
+new_work_btn.addEventListener("click", () => {
+  clear_work_form();
+  open_form(work_split);
+});
+
+new_academia_btn.addEventListener("click", () => {
+  clear_entry_form(academia_fields, academia_cache, null);
+  open_form(academia_split);
+});
+
+new_awards_btn.addEventListener("click", () => {
+  clear_entry_form(awards_fields, awards_cache, null);
+  open_form(awards_split);
+});
 
 reset_project_btn.addEventListener("click",  clear_project_form);
 reset_post_btn.addEventListener("click",     clear_post_form);
 reset_resume_btn.addEventListener("click",   clear_resume_form);
-reset_work_btn.addEventListener("click",     () => clear_entry_form(work_fields,     work_cache));
-reset_academia_btn.addEventListener("click", () => clear_entry_form(academia_fields, academia_cache));
-reset_awards_btn.addEventListener("click",   () => clear_entry_form(awards_fields,   awards_cache));
+
+// Cancel buttons on entry forms hide the form
+reset_work_btn.addEventListener("click",     () => { clear_work_form(); });
+reset_academia_btn.addEventListener("click", () => { clear_entry_form(academia_fields, academia_cache, academia_split); });
+reset_awards_btn.addEventListener("click",   () => { clear_entry_form(awards_fields,   awards_cache,   awards_split); });
 
 // ── Delegated click handler (edit / delete) ───────────────────────────────────
 
@@ -821,9 +919,9 @@ document.addEventListener("click", async (event) => {
     if (type === "projects") { const item = projects_cache.find((e) => e.id === id); if (item) fill_project_form(item); }
     if (type === "posts")    { const item = posts_cache.find((e) => e.id === id);    if (item) fill_post_form(item); }
     if (type === "resumes")  { const item = resumes_cache.find((e) => e.id === id);  if (item) fill_resume_form(item); }
-    if (type === "work")     { const item = work_cache.find((e) => e.id === id);     if (item) fill_entry_form(work_fields,     item, "work_tab"); }
-    if (type === "academia") { const item = academia_cache.find((e) => e.id === id); if (item) fill_entry_form(academia_fields, item, "academia_tab"); }
-    if (type === "awards")   { const item = awards_cache.find((e) => e.id === id);   if (item) fill_entry_form(awards_fields,   item, "awards_tab"); }
+    if (type === "work")     { const item = work_cache.find((e) => e.id === id);     if (item) fill_work_form(item); }
+    if (type === "academia") { const item = academia_cache.find((e) => e.id === id); if (item) fill_entry_form(academia_fields, item, "academia_tab", academia_split); }
+    if (type === "awards")   { const item = awards_cache.find((e) => e.id === id);   if (item) fill_entry_form(awards_fields,   item, "awards_tab",   awards_split); }
     return;
   }
 
@@ -835,16 +933,13 @@ document.addEventListener("click", async (event) => {
       if (type === "projects") { projects_cache = projects_cache.filter((i) => i.id !== id); await save_projects(); }
       if (type === "posts")    { posts_cache    = posts_cache.filter((i) => i.id !== id);    await save_posts(); }
       if (type === "resumes")  { resumes_cache  = resumes_cache.filter((i) => i.id !== id);  await save_resumes(); }
-      if (type === "work")     { work_cache     = work_cache.filter((i) => i.id !== id);     await save_entries("work",     work_cache,     "work_id"); }
+      if (type === "work")     { work_cache     = work_cache.filter((i) => i.id !== id);     await save_work(); }
       if (type === "academia") { academia_cache = academia_cache.filter((i) => i.id !== id); await save_entries("academia", academia_cache, "academia_id"); }
       if (type === "awards")   { awards_cache   = awards_cache.filter((i) => i.id !== id);   await save_entries("awards",   awards_cache,   "awards_id"); }
 
       show_toast("Item deleted ✓");
       await load_dashboard_data();
-    } catch (err) {
-      console.error(err);
-      show_toast("Failed to delete item", true);
-    }
+    } catch (err) { console.error(err); show_toast("Failed to delete item", true); }
   }
 });
 
@@ -866,9 +961,9 @@ search_input.addEventListener("input", () => {
   const matches = get_all_searchable().filter((item) =>
     (item.title        || "").toLowerCase().includes(query) ||
     (item.subtitle     || "").toLowerCase().includes(query) ||
+    (item.category     || "").toLowerCase().includes(query) ||
     (item.organization || "").toLowerCase().includes(query) ||
-    (item.description  || "").toLowerCase().includes(query) ||
-    (item.category     || "").toLowerCase().includes(query)
+    (item.description  || "").toLowerCase().includes(query)
   ).slice(0, 12);
 
   if (!matches.length) {
@@ -880,7 +975,7 @@ search_input.addEventListener("input", () => {
   search_results.innerHTML = matches.map((item) => `
     <div class='search_result_item' data-tab='${item._tab}' data-id='${item.id}' data-type='${item._type}'>
       <strong>${item.title || "Untitled"}</strong>
-      <span>${item._type}${item.organization ? " · " + item.organization : ""}</span>
+      <span>${item._type}${item.organization ? " · " + item.organization : ""}${item.category ? " · " + item.category : ""}</span>
     </div>
   `).join("");
 
@@ -894,6 +989,12 @@ search_results.addEventListener("click", (event) => {
   switch_tab(tab);
   search_input.value = "";
   search_results.classList.remove("visible");
+
+  // Open form if it's an entry type
+  if (type === "work")     open_form(work_split);
+  if (type === "academia") open_form(academia_split);
+  if (type === "awards")   open_form(awards_split);
+
   setTimeout(() => {
     const btn = document.querySelector(`[data-action='edit'][data-type='${type}'][data-id='${id}']`);
     if (btn) btn.closest(".item_card").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -934,7 +1035,6 @@ logout_btn.addEventListener("click", () => {
 // ── Boot ──────────────────────────────────────────────────────────────────────
 
 const boot = async () => {
-  console.log("BOOT START");
   const just_logged_in = await handle_cognito_redirect();
 
   if (just_logged_in || has_valid_session()) {

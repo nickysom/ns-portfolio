@@ -52,6 +52,19 @@ const normalizeResumes = (items = []) =>
     is_current: !!item.is_current
   }))
 
+const normalizeWork = (items = []) =>
+  items.map((item) => ({
+    id:           item.work_id || '',
+    title:        item.title || '',
+    category:     item.category || '',
+    organization: item.organization || '',
+    date_range:   item.date_range || '',
+    description:  item.description || '',
+    link:         item.link || '',
+    sort_order:   Number(item.sort_order || 9999),
+    is_visible:   item.is_visible !== false,
+  }))
+
 const normalizeEntries = (items = [], id_key) =>
   items.map((item) => ({
     id:           item[id_key] || '',
@@ -61,31 +74,26 @@ const normalizeEntries = (items = [], id_key) =>
     date_range:   item.date_range || '',
     description:  item.description || '',
     link:         item.link || '',
-    sort_order:   Number(item.sort_order || 9999)
+    sort_order:   Number(item.sort_order || 9999),
+    is_visible:   item.is_visible !== false,
   }))
 
 // ── Renderers ─────────────────────────────────────────────────────────────────
 
 const createProjectCard = (project) => {
   const href = project.link && project.link.trim() ? project.link.trim() : null
-  const tag = escapeHtml(project.category)
-  const title = escapeHtml(project.title)
-  const description = escapeHtml(project.description)
-
   const inner = `
     <article class='project_card'>
-      <span class='project_tag'>${tag}</span>
-      <h3>${title}</h3>
-      <p>${description}</p>
+      <span class='project_tag'>${escapeHtml(project.category)}</span>
+      <h3>${escapeHtml(project.title)}</h3>
+      <p>${escapeHtml(project.description)}</p>
     </article>
   `
-
   if (href) {
     const isExternal = /^https?:\/\//i.test(href)
     const target = isExternal ? " target='_blank' rel='noopener noreferrer'" : ''
     return `<a href='${escapeHtml(href)}' class='project_card_link'${target}>${inner}</a>`
   }
-
   return `<div class='project_card_link'>${inner}</div>`
 }
 
@@ -99,8 +107,41 @@ const createSeeMoreCard = () => `
   </a>
 `
 
+// A single role row inside a company card
+const createRoleRow = (entry) => {
+  const hasLink    = entry.link && entry.link.trim()
+  const isExternal = hasLink && /^https?:\/\//i.test(entry.link.trim())
+
+  return `
+    <div class='role_row'>
+      <div class='role_row_header'>
+        <div class='role_row_titles'>
+          <h4 class='role_title'>${escapeHtml(entry.title)}</h4>
+          ${entry.category ? `<span class='role_category_tag'>${escapeHtml(entry.category)}</span>` : ''}
+        </div>
+        ${entry.date_range ? `<span class='entry_date'>${escapeHtml(entry.date_range)}</span>` : ''}
+      </div>
+      ${entry.description ? `<p class='entry_description'>${escapeHtml(entry.description)}</p>` : ''}
+      ${hasLink ? `<a href='${escapeHtml(entry.link.trim())}' class='entry_link' ${isExternal ? "target='_blank' rel='noopener noreferrer'" : ''}>View →</a>` : ''}
+    </div>
+  `
+}
+
+// A company card grouping multiple roles
+const createCompanyCard = (org_name, roles) => `
+  <div class='company_card'>
+    <div class='company_card_header'>
+      <h3 class='company_name'>${escapeHtml(org_name)}</h3>
+    </div>
+    <div class='company_roles'>
+      ${roles.map(createRoleRow).join('')}
+    </div>
+  </div>
+`
+
+// Standalone entry card for academia / awards
 const createEntryCard = (entry) => {
-  const hasLink = entry.link && entry.link.trim()
+  const hasLink    = entry.link && entry.link.trim()
   const isExternal = hasLink && /^https?:\/\//i.test(entry.link.trim())
 
   return `
@@ -125,16 +166,16 @@ const renderProjects = (items = []) => {
   const grid = getEl('projects_grid')
   if (!grid) return
 
-  const visibleProjects = normalizeProjects(items)
+  const visible = normalizeProjects(items)
     .filter((p) => p.is_visible)
     .sort((a, b) => a.sort_order - b.sort_order)
 
-  if (!visibleProjects.length) {
+  if (!visible.length) {
     grid.innerHTML = `<article class='project_card'><h3>No projects yet</h3><p>Add projects from the admin dashboard.</p></article>`
     return
   }
 
-  const cards = visibleProjects.slice(0, 5).map(createProjectCard)
+  const cards = visible.slice(0, 5).map(createProjectCard)
   cards.push(createSeeMoreCard())
   grid.innerHTML = cards.join('')
 }
@@ -182,11 +223,49 @@ const renderResume = (items = []) => {
   }
 }
 
+const renderWork = (items = []) => {
+  const container = getEl('work_grid')
+  if (!container) return
+
+  // Only visible entries, sort_order ascending (1 = newest = top)
+  const entries = normalizeWork(items)
+    .filter((e) => e.is_visible)
+    .sort((a, b) => a.sort_order - b.sort_order)
+
+  if (!entries.length) {
+    container.innerHTML = `<p class='entries_empty'>Work experience coming soon.</p>`
+    return
+  }
+
+  // Group by organization (case-insensitive). Entries with no org stay standalone.
+  const groups = new Map()
+  for (const entry of entries) {
+    const key = entry.organization.trim().toLowerCase() || `__solo__${entry.id}`
+    if (!groups.has(key)) groups.set(key, { org_name: entry.organization.trim(), roles: [] })
+    groups.get(key).roles.push(entry)
+  }
+
+  // Sort groups so the group with the lowest sort_order entry appears first
+  const sorted_groups = [...groups.values()].sort((a, b) => {
+    const min_a = Math.min(...a.roles.map((r) => r.sort_order))
+    const min_b = Math.min(...b.roles.map((r) => r.sort_order))
+    return min_a - min_b
+  })
+
+  container.innerHTML = sorted_groups.map((group) =>
+    group.org_name
+      ? createCompanyCard(group.org_name, group.roles)
+      : group.roles.map(createEntryCard).join('')
+  ).join('')
+}
+
 const renderEntries = (containerId, items = [], id_key, emptyMessage) => {
   const container = getEl(containerId)
   if (!container) return
 
+  // Only visible entries, sort ascending
   const entries = normalizeEntries(items, id_key)
+    .filter((e) => e.is_visible)
     .sort((a, b) => a.sort_order - b.sort_order)
 
   if (!entries.length) {
@@ -224,21 +303,19 @@ const loadContent = async () => {
       safeGet('awards'),
     ])
 
-    // Site content
-    setText('title',    site.title,    'Hi, I\'m Nicky')
-    setText('subtitle', site.subtitle, 'Student • Developer • Builder')
-    setText('intro',    site.intro,    'Welcome to my portfolio.')
-    setText('about',    site.about,    '')
-    setText('email',    site.email,    '')
-    setText('linkedin', site.linkedin, '')
-    setText('github',   site.github,   '')
-    setText('instagram',site.instagram,'')
+    setText('title',     site.title,     "Hi, I'm Nicky")
+    setText('subtitle',  site.subtitle,  'Student • Developer • Builder')
+    setText('intro',     site.intro,     'Welcome to my portfolio.')
+    setText('about',     site.about,     '')
+    setText('email',     site.email,     '')
+    setText('linkedin',  site.linkedin,  '')
+    setText('github',    site.github,    '')
+    setText('instagram', site.instagram, '')
 
-    // Structured sections
     renderProjects(projects.items || [])
     renderPosts(posts.items || [])
     renderResume(resumes.items || [])
-    renderEntries('work_grid',     work.items     || [], 'work_id',     'Work experience coming soon.')
+    renderWork(work.items || [])
     renderEntries('academia_grid', academia.items || [], 'academia_id', 'Academic background coming soon.')
     renderEntries('awards_grid',   awards.items   || [], 'awards_id',   'Awards and achievements coming soon.')
 
