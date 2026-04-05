@@ -82,9 +82,30 @@ a {
   min-height: 78vh;
   display: flex;
   align-items: center;
-  background:
-    radial-gradient(circle at top left, rgba(194, 24, 91, 0.14), transparent 30%),
-    linear-gradient(135deg, #fff8fb 0%, #fff1f6 52%, #ffe4ed 100%);
+
+  background: linear-gradient(
+    270deg,
+    #fff8fb,
+    #fff1f6,
+    #ffe4ed,
+    #fff1f6,
+    #fff8fb
+  );
+
+  background-size: 400% 400%;
+  animation: waveFlow 5s ease infinite;
+}
+
+@keyframes waveFlow {
+  0% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 0%;
+  }
 }
 
 .hero_content {
