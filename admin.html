@@ -1,470 +1,857 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin Dashboard | Nicky Portfolio</title>
-  <link rel="stylesheet" href="styles/admin.css" />
-  <style>
-    body { margin: 0; height: 100vh; overflow: hidden; }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard | Nicky Portfolio</title>
+    <link rel="stylesheet" href="styles/admin.css" />
+    <style>
+      body {
+        margin: 0;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    .welcome_screen {
-      position: fixed; inset: 0;
-      display: flex; align-items: center; justify-content: center;
-    }
+      .welcome_screen {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
 
-    .dashboard_shell {
-      display: grid;
-      grid-template-columns: 240px 1fr;
-      height: 100vh;
-      overflow: hidden;
-    }
+      .dashboard_shell {
+        display: grid;
+        grid-template-columns: 240px 1fr;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-    .dashboard_sidebar {
-      height: 100vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      padding: 24px 16px;
-      box-sizing: border-box;
-      border-right: 1px solid var(--border, #e2e8f0);
-    }
+      .dashboard_sidebar {
+        height: 100vh;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        padding: 24px 16px;
+        box-sizing: border-box;
+        border-right: 1px solid var(--border, #e2e8f0);
+      }
 
-    .dashboard_main {
-      height: 100vh;
-      overflow-y: auto;
-      padding: 32px;
-      box-sizing: border-box;
-    }
+      .dashboard_main {
+        height: 100vh;
+        overflow-y: auto;
+        padding: 32px;
+        box-sizing: border-box;
+      }
 
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      margin-bottom: 24px;
-      gap: 12px;
-    }
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        margin-bottom: 24px;
+        gap: 12px;
+      }
 
-    .search_wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface, #f8fafc);
-      border: 1px solid var(--border, #e2e8f0);
-      border-radius: 8px;
-      padding: 6px 12px;
-    }
+      .search_wrapper {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface, #f8fafc);
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: 8px;
+        padding: 6px 12px;
+      }
 
-    .search_wrapper svg { flex-shrink: 0; opacity: 0.5; }
+      .search_wrapper svg {
+        flex-shrink: 0;
+        opacity: 0.5;
+      }
 
-    #search_input {
-      border: none;
-      background: transparent;
-      outline: none;
-      width: 200px;
-      font-size: 14px;
-    }
+      #search_input {
+        border: none;
+        background: transparent;
+        outline: none;
+        width: 200px;
+        font-size: 14px;
+      }
 
-    #search_results {
-      display: none;
-      position: fixed;
-      top: 72px;
-      right: 32px;
-      width: 360px;
-      max-height: 480px;
-      overflow-y: auto;
-      background: white;
-      border: 1px solid var(--border, #e2e8f0);
-      border-radius: 12px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
-      z-index: 100;
-      padding: 8px 0;
-    }
+      #search_results {
+        display: none;
+        position: fixed;
+        top: 72px;
+        right: 32px;
+        width: 360px;
+        max-height: 480px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid var(--border, #e2e8f0);
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+        z-index: 100;
+        padding: 8px 0;
+      }
 
-    #search_results.visible { display: block; }
+      #search_results.visible {
+        display: block;
+      }
 
-    .search_result_item {
-      padding: 10px 16px;
-      cursor: pointer;
-      border-bottom: 1px solid var(--border, #f1f5f9);
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
+      .search_result_item {
+        padding: 10px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid var(--border, #f1f5f9);
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
 
-    .search_result_item:last-child { border-bottom: none; }
-    .search_result_item:hover { background: var(--surface, #f8fafc); }
-    .search_result_item strong { font-size: 14px; }
-    .search_result_item span { font-size: 12px; opacity: 0.6; text-transform: capitalize; }
+      .search_result_item:last-child {
+        border-bottom: none;
+      }
+      .search_result_item:hover {
+        background: var(--surface, #f8fafc);
+      }
+      .search_result_item strong {
+        font-size: 14px;
+      }
+      .search_result_item span {
+        font-size: 12px;
+        opacity: 0.6;
+        text-transform: capitalize;
+      }
 
-    #toast {
-      position: fixed;
-      bottom: 32px;
-      right: 32px;
-      padding: 12px 20px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 500;
-      color: white;
-      background: #22c55e;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
-      z-index: 999;
-      opacity: 0;
-      transform: translateY(12px);
-      transition: opacity 0.25s, transform 0.25s;
-      pointer-events: none;
-    }
+      #toast {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        padding: 12px 20px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 500;
+        color: white;
+        background: #22c55e;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+        z-index: 999;
+        opacity: 0;
+        transform: translateY(12px);
+        transition:
+          opacity 0.25s,
+          transform 0.25s;
+        pointer-events: none;
+      }
 
-    #toast.show { opacity: 1; transform: translateY(0); }
-    #toast.error { background: #ef4444; }
+      #toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      #toast.error {
+        background: #ef4444;
+      }
 
-    .dashboard_tab { display: none; }
-    .dashboard_tab.active { display: block; }
+      .dashboard_tab {
+        display: none;
+      }
+      .dashboard_tab.active {
+        display: block;
+      }
 
-    .stats_grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
+      .stats_grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
 
-    /* Split layout — form hidden by default, shown when .form_open is added */
-    .dashboard_split {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 24px;
-      align-items: start;
-    }
+      /* Split layout — form hidden by default, shown when .form_open is added */
+      .dashboard_split {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+        align-items: start;
+      }
 
-    .dashboard_split.form_open {
-      grid-template-columns: 1fr 1fr;
-    }
+      .dashboard_split.form_open {
+        grid-template-columns: 1fr 1fr;
+      }
 
-    .entry_form_panel {
-      display: none;
-    }
+      .entry_form_panel {
+        display: none;
+      }
 
-    .dashboard_split.form_open .entry_form_panel {
-      display: grid;
-    }
+      .dashboard_split.form_open .entry_form_panel {
+        display: grid;
+      }
 
-    /* Projects / posts / resumes always show their form */
-    .dashboard_split.always_split {
-      grid-template-columns: 1fr 1fr;
-    }
+      /* Projects / posts / resumes always show their form */
+      .dashboard_split.always_split {
+        grid-template-columns: 1fr 1fr;
+      }
 
-    .item_card_top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-    }
+      .item_card_top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
 
-    .item_actions {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      flex-shrink: 0;
-    }
+      .item_actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
 
-    .item_actions button { font-size: 12px; padding: 4px 8px; }
+      .item_actions button {
+        font-size: 12px;
+        padding: 4px 8px;
+      }
 
-    .item_sort_badge {
-      display: inline-block;
-      font-size: 11px;
-      color: var(--text-muted, #94a3b8);
-      background: var(--surface, #f1f5f9);
-      border-radius: 4px;
-      padding: 1px 6px;
-      margin-left: 4px;
-    }
+      .item_sort_badge {
+        display: inline-block;
+        font-size: 11px;
+        color: var(--text-muted, #94a3b8);
+        background: var(--surface, #f1f5f9);
+        border-radius: 4px;
+        padding: 1px 6px;
+        margin-left: 4px;
+      }
 
-    .item_category_badge {
-      display: inline-block;
-      font-size: 11px;
-      color: var(--accent-dark, #9f1248);
-      background: var(--accent-pale, rgba(194,24,91,0.08));
-      border-radius: 4px;
-      padding: 1px 6px;
-      margin-left: 4px;
-    }
+      .item_category_badge {
+        display: inline-block;
+        font-size: 11px;
+        color: var(--accent-dark, #9f1248);
+        background: var(--accent-pale, rgba(194, 24, 91, 0.08));
+        border-radius: 4px;
+        padding: 1px 6px;
+        margin-left: 4px;
+      }
 
-    .item_hidden_badge {
-      display: inline-block;
-      font-size: 11px;
-      color: #64748b;
-      background: #f1f5f9;
-      border-radius: 4px;
-      padding: 1px 6px;
-      margin-left: 4px;
-    }
+      .item_hidden_badge {
+        display: inline-block;
+        font-size: 11px;
+        color: #64748b;
+        background: #f1f5f9;
+        border-radius: 4px;
+        padding: 1px 6px;
+        margin-left: 4px;
+      }
 
-    .nav_tab.active { font-weight: 600; }
-  </style>
-</head>
-<body>
+      .nav_tab.active {
+        font-weight: 600;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="toast"></div>
+    <div id="search_results"></div>
 
-  <div id="toast"></div>
-  <div id="search_results"></div>
-
-  <section class="welcome_screen" id="welcome_screen">
-    <div class="welcome_card">
-      <p class="welcome_label">Portfolio Admin Portal</p>
-      <h1>Welcome back</h1>
-      <p class="welcome_text">Sign in to manage your projects, posts, resume, and site content.</p>
-      <div class="welcome_actions">
-        <button id="login_btn" type="button">Sign in with Google</button>
+    <section class="welcome_screen" id="welcome_screen">
+      <div class="welcome_card">
+        <p class="welcome_label">Portfolio Admin Portal</p>
+        <h1>Welcome back</h1>
+        <p class="welcome_text">
+          Sign in to manage your projects, posts, resume, and site content.
+        </p>
+        <div class="welcome_actions">
+          <button id="login_btn" type="button">Sign in with Google</button>
+        </div>
+        <p id="auth_status" class="welcome_status">Not signed in</p>
       </div>
-      <p id="auth_status" class="welcome_status">Not signed in</p>
+    </section>
+
+    <div class="dashboard_shell" id="dashboard_shell" style="display: none">
+      <aside class="dashboard_sidebar">
+        <div class="sidebar_brand">
+          <h1>Nicky Admin</h1>
+          <p>Content dashboard</p>
+        </div>
+
+        <div class="sidebar_auth panel">
+          <p id="sidebar_auth_text">Signed in</p>
+          <div class="auth_actions">
+            <button id="logout_btn" type="button">Sign out</button>
+          </div>
+        </div>
+
+        <nav class="sidebar_nav">
+          <button class="nav_tab active" data-tab="overview_tab" type="button">
+            Overview
+          </button>
+          <button class="nav_tab" data-tab="site_tab" type="button">
+            Site Content
+          </button>
+          <button class="nav_tab" data-tab="projects_tab" type="button">
+            Projects
+          </button>
+          <button class="nav_tab" data-tab="posts_tab" type="button">
+            Posts
+          </button>
+          <button class="nav_tab" data-tab="resumes_tab" type="button">
+            Resumes
+          </button>
+          <button class="nav_tab" data-tab="work_tab" type="button">
+            Work
+          </button>
+          <button class="nav_tab" data-tab="academia_tab" type="button">
+            Academia
+          </button>
+          <button class="nav_tab" data-tab="awards_tab" type="button">
+            Awards
+          </button>
+        </nav>
+
+        <a class="view_site_link" href="index.html">View site</a>
+      </aside>
+
+      <main class="dashboard_main" id="admin_content">
+        <div class="topbar">
+          <div class="search_wrapper">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              id="search_input"
+              type="text"
+              placeholder="Search all content…"
+            />
+          </div>
+        </div>
+
+        <!-- OVERVIEW -->
+        <section class="dashboard_tab active" id="overview_tab">
+          <div class="page_header">
+            <h2>Overview</h2>
+            <p>Manage your portfolio without editing HTML by hand.</p>
+          </div>
+          <div class="stats_grid">
+            <div class="panel stat_card">
+              <h3>Projects</h3>
+              <p id="projects_count">0</p>
+            </div>
+            <div class="panel stat_card">
+              <h3>Posts</h3>
+              <p id="posts_count">0</p>
+            </div>
+            <div class="panel stat_card">
+              <h3>Resumes</h3>
+              <p id="resumes_count">0</p>
+            </div>
+            <div class="panel stat_card">
+              <h3>Work</h3>
+              <p id="work_count">0</p>
+            </div>
+            <div class="panel stat_card">
+              <h3>Academia</h3>
+              <p id="academia_count">0</p>
+            </div>
+            <div class="panel stat_card">
+              <h3>Awards</h3>
+              <p id="awards_count">0</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- SITE CONTENT -->
+        <section class="dashboard_tab" id="site_tab">
+          <div class="page_header">
+            <h2>Site Content</h2>
+            <p>Edit your homepage and contact content.</p>
+          </div>
+          <form id="site_form" class="panel form_panel">
+            <div class="form_grid">
+              <div class="form_group">
+                <label for="title_input">Title</label
+                ><input id="title_input" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="subtitle_input">Subtitle</label
+                ><input id="subtitle_input" type="text" />
+              </div>
+              <div class="form_group full_width">
+                <label for="intro_input">Intro</label
+                ><textarea id="intro_input" rows="4"></textarea>
+              </div>
+              <div class="form_group full_width">
+                <label for="about_input">About</label
+                ><textarea id="about_input" rows="6"></textarea>
+              </div>
+              <div class="form_group">
+                <label for="email_input">Email</label
+                ><input id="email_input" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="linkedin_input">LinkedIn</label
+                ><input id="linkedin_input" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="github_input">GitHub</label
+                ><input id="github_input" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="instagram_input">Instagram</label
+                ><input id="instagram_input" type="text" />
+              </div>
+            </div>
+            <div class="form_actions">
+              <button type="submit">Save Site Content</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- PROJECTS -->
+        <section class="dashboard_tab" id="projects_tab">
+          <div class="page_header">
+            <h2>Projects</h2>
+            <p>Add, edit, hide, or delete projects.</p>
+          </div>
+          <div class="dashboard_split always_split">
+            <div class="panel list_panel">
+              <div class="list_header">
+                <h3>All Projects</h3>
+                <button id="new_project_btn" type="button">New Project</button>
+              </div>
+              <div id="projects_list" class="item_list"></div>
+            </div>
+            <form id="project_form" class="panel form_panel">
+              <input id="project_id" type="hidden" />
+              <div class="form_group">
+                <label for="project_title">Title</label
+                ><input id="project_title" type="text" required />
+              </div>
+              <div class="form_group">
+                <label for="project_slug">Slug</label
+                ><input
+                  id="project_slug"
+                  type="text"
+                  placeholder="nsportfolio_game"
+                />
+              </div>
+              <div class="form_group">
+                <label for="project_category">Category</label
+                ><input id="project_category" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="project_link">Link</label
+                ><input id="project_link" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="project_image_url">Image URL</label
+                ><input id="project_image_url" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="project_sort_order">Sort Order</label
+                ><input
+                  id="project_sort_order"
+                  type="number"
+                  value="1"
+                  min="1"
+                />
+              </div>
+              <div class="form_group checkbox_group">
+                <label
+                  ><input id="project_is_visible" type="checkbox" checked />
+                  Visible</label
+                >
+                <label
+                  ><input id="project_is_featured" type="checkbox" />
+                  Featured</label
+                >
+              </div>
+              <div class="form_group full_width">
+                <label for="project_description">Description</label
+                ><textarea id="project_description" rows="5"></textarea>
+              </div>
+              <div class="form_actions">
+                <button type="submit">Save Project</button>
+                <button
+                  id="reset_project_btn"
+                  type="button"
+                  class="secondary_btn"
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- POSTS -->
+        <section class="dashboard_tab" id="posts_tab">
+          <div class="page_header">
+            <h2>Posts</h2>
+            <p>Create and manage updates or blog posts.</p>
+          </div>
+          <div class="dashboard_split always_split">
+            <div class="panel list_panel">
+              <div class="list_header">
+                <h3>All Posts</h3>
+                <button id="new_post_btn" type="button">New Post</button>
+              </div>
+              <div id="posts_list" class="item_list"></div>
+            </div>
+            <form id="post_form" class="panel form_panel">
+              <input id="post_id" type="hidden" />
+              <div class="form_group">
+                <label for="post_title">Title</label
+                ><input id="post_title" type="text" required />
+              </div>
+              <div class="form_group">
+                <label for="post_slug">Slug</label
+                ><input id="post_slug" type="text" placeholder="my_post" />
+              </div>
+              <div class="form_group">
+                <label for="post_cover_image_url">Cover Image URL</label
+                ><input id="post_cover_image_url" type="text" />
+              </div>
+              <div class="form_group">
+                <label for="post_sort_order">Sort Order</label
+                ><input id="post_sort_order" type="number" value="1" min="1" />
+              </div>
+              <div class="form_group checkbox_group">
+                <label
+                  ><input id="post_is_published" type="checkbox" checked />
+                  Published</label
+                >
+              </div>
+              <div class="form_group full_width">
+                <label for="post_excerpt">Excerpt</label
+                ><textarea id="post_excerpt" rows="3"></textarea>
+              </div>
+              <div class="form_group full_width">
+                <label for="post_content">Content</label
+                ><textarea id="post_content" rows="8"></textarea>
+              </div>
+              <div class="form_actions">
+                <button type="submit">Save Post</button>
+                <button id="reset_post_btn" type="button" class="secondary_btn">
+                  Clear
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- RESUMES -->
+        <section class="dashboard_tab" id="resumes_tab">
+          <div class="page_header">
+            <h2>Resumes</h2>
+            <p>Store resume metadata and current resume links.</p>
+          </div>
+          <div class="dashboard_split always_split">
+            <div class="panel list_panel">
+              <div class="list_header">
+                <h3>All Resumes</h3>
+                <button id="new_resume_btn" type="button">New Resume</button>
+              </div>
+              <div id="resumes_list" class="item_list"></div>
+            </div>
+            <form id="resume_form" class="panel form_panel">
+              <input id="resume_id" type="hidden" />
+              <div class="form_group">
+                <label for="resume_title">Title</label
+                ><input id="resume_title" type="text" required />
+              </div>
+              <div class="form_group">
+                <label for="resume_file_name">File Name</label
+                ><input id="resume_file_name" type="text" />
+              </div>
+              <div class="form_group full_width">
+                <label for="resume_file_url">File URL</label
+                ><input id="resume_file_url" type="text" />
+              </div>
+              <div class="form_group checkbox_group">
+                <label
+                  ><input id="resume_is_current" type="checkbox" /> Current
+                  Resume</label
+                >
+              </div>
+              <div class="form_actions">
+                <button type="submit">Save Resume</button>
+                <button
+                  id="reset_resume_btn"
+                  type="button"
+                  class="secondary_btn"
+                >
+                  Clear
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- WORK -->
+        <section class="dashboard_tab" id="work_tab">
+          <div class="page_header">
+            <h2>Work</h2>
+            <p>
+              Add and manage work entries. Entries with the same organization
+              are grouped together on the public site.
+            </p>
+          </div>
+
+          <div class="dashboard_split" id="work_split">
+            <div class="panel list_panel">
+              <div class="list_header">
+                <h3>All Work Entries</h3>
+                <button id="new_work_btn" type="button">New Entry</button>
+              </div>
+              <div id="work_list" class="item_list"></div>
+            </div>
+
+            <form id="work_form" class="panel form_panel entry_form_panel">
+              <input id="work_id" type="hidden" />
+
+              <div class="form_group">
+                <label for="work_title">Job Title</label>
+                <input
+                  id="work_title"
+                  type="text"
+                  required
+                  placeholder="e.g. IT Service Desk Support Specialist"
+                />
+              </div>
+
+              <div class="form_group">
+                <label for="work_subtitle">Employment Type</label>
+                <input
+                  id="work_subtitle"
+                  type="text"
+                  placeholder="e.g. Part-Time, Internship, Full-Time"
+                />
+              </div>
+
+              <div class="form_group">
+                <label for="work_organization">Organization</label>
+                <input
+                  id="work_organization"
+                  type="text"
+                  placeholder="e.g. Penn State University"
+                />
+              </div>
+
+              <div class="form_group">
+                <label for="work_link">Link</label>
+                <input id="work_link" type="text" placeholder="https://" />
+              </div>
+
+              <div class="form_group">
+                <label for="work_start_date">Start Date</label>
+                <input id="work_start_date" type="month" />
+              </div>
+
+              <div class="form_group">
+                <label for="work_end_date">End Date</label>
+                <input id="work_end_date" type="month" />
+              </div>
+
+              <div class="form_group checkbox_group">
+                <label
+                  ><input id="work_is_current" type="checkbox" /> Current
+                  Role</label
+                >
+                <label
+                  ><input id="work_is_visible" type="checkbox" checked />
+                  Visible on site</label
+                >
+              </div>
+
+              <div class="form_group full_width">
+                <label for="work_description">Description</label>
+                <textarea id="work_description" rows="5"></textarea>
+              </div>
+
+              <div class="form_actions">
+                <button type="submit">Save Entry</button>
+                <button id="reset_work_btn" type="button" class="secondary_btn">
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- ACADEMIA -->
+        <section class="dashboard_tab" id="academia_tab">
+          <div class="page_header">
+            <h2>Academia</h2>
+            <p>Add and manage your academic history entries.</p>
+          </div>
+          <div class="dashboard_split" id="academia_split">
+            <div class="panel list_panel">
+              <div class="list_header">
+                <h3>All Academia Entries</h3>
+                <button id="new_academia_btn" type="button">New Entry</button>
+              </div>
+              <div id="academia_list" class="item_list"></div>
+            </div>
+            <form id="academia_form" class="panel form_panel entry_form_panel">
+              <input id="academia_id" type="hidden" />
+              <div class="form_group">
+                <label for="academia_title">Title</label
+                ><input
+                  id="academia_title"
+                  type="text"
+                  required
+                  placeholder="e.g. B.S. Computer Science"
+                />
+              </div>
+              <div class="form_group">
+                <label for="academia_subtitle">Subtitle / Role</label
+                ><input
+                  id="academia_subtitle"
+                  type="text"
+                  placeholder="e.g. Minor in Mathematics"
+                />
+              </div>
+              <div class="form_group">
+                <label for="academia_organization">Institution</label
+                ><input
+                  id="academia_organization"
+                  type="text"
+                  placeholder="e.g. MIT"
+                />
+              </div>
+              <div class="form_group">
+                <label for="academia_date_range">Date / Year Range</label
+                ><input
+                  id="academia_date_range"
+                  type="text"
+                  placeholder="e.g. 2018 – 2022"
+                />
+              </div>
+              <div class="form_group">
+                <label for="academia_sort_order">Sort Order</label
+                ><input
+                  id="academia_sort_order"
+                  type="number"
+                  value="1"
+                  min="1"
+                />
+              </div>
+              <div class="form_group">
+                <label for="academia_link">Link</label
+                ><input id="academia_link" type="text" placeholder="https://" />
+              </div>
+              <div class="form_group full_width">
+                <label for="academia_description">Description</label
+                ><textarea id="academia_description" rows="5"></textarea>
+              </div>
+              <div class="form_group checkbox_group">
+                <label
+                  ><input id="academia_is_visible" type="checkbox" checked />
+                  Visible on site</label
+                >
+              </div>
+              <div class="form_actions">
+                <button type="submit">Save Entry</button>
+                <button
+                  id="reset_academia_btn"
+                  type="button"
+                  class="secondary_btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- AWARDS -->
+        <section class="dashboard_tab" id="awards_tab">
+          <div class="page_header">
+            <h2>Awards</h2>
+            <p>Add and manage your awards and recognition entries.</p>
+          </div>
+          <div class="dashboard_split" id="awards_split">
+            <div class="panel list_panel">
+              <div class="list_header">
+                <h3>All Awards Entries</h3>
+                <button id="new_awards_btn" type="button">New Entry</button>
+              </div>
+              <div id="awards_list" class="item_list"></div>
+            </div>
+            <form id="awards_form" class="panel form_panel entry_form_panel">
+              <input id="awards_id" type="hidden" />
+              <div class="form_group">
+                <label for="awards_title">Title</label
+                ><input
+                  id="awards_title"
+                  type="text"
+                  required
+                  placeholder="e.g. Best Paper Award"
+                />
+              </div>
+              <div class="form_group">
+                <label for="awards_subtitle">Subtitle / Role</label
+                ><input
+                  id="awards_subtitle"
+                  type="text"
+                  placeholder="e.g. First Place"
+                />
+              </div>
+              <div class="form_group">
+                <label for="awards_organization">Organization</label
+                ><input
+                  id="awards_organization"
+                  type="text"
+                  placeholder="e.g. IEEE"
+                />
+              </div>
+              <div class="form_group">
+                <label for="awards_date_range">Date / Year</label
+                ><input
+                  id="awards_date_range"
+                  type="text"
+                  placeholder="e.g. 2023"
+                />
+              </div>
+              <div class="form_group">
+                <label for="awards_sort_order">Sort Order</label
+                ><input
+                  id="awards_sort_order"
+                  type="number"
+                  value="1"
+                  min="1"
+                />
+              </div>
+              <div class="form_group">
+                <label for="awards_link">Link</label
+                ><input id="awards_link" type="text" placeholder="https://" />
+              </div>
+              <div class="form_group full_width">
+                <label for="awards_description">Description</label
+                ><textarea id="awards_description" rows="5"></textarea>
+              </div>
+              <div class="form_group checkbox_group">
+                <label
+                  ><input id="awards_is_visible" type="checkbox" checked />
+                  Visible on site</label
+                >
+              </div>
+              <div class="form_actions">
+                <button type="submit">Save Entry</button>
+                <button
+                  id="reset_awards_btn"
+                  type="button"
+                  class="secondary_btn"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
     </div>
-  </section>
 
-  <div class="dashboard_shell" id="dashboard_shell" style="display:none;">
-    <aside class="dashboard_sidebar">
-      <div class="sidebar_brand">
-        <h1>Nicky Admin</h1>
-        <p>Content dashboard</p>
-      </div>
-
-      <div class="sidebar_auth panel">
-        <p id="sidebar_auth_text">Signed in</p>
-        <div class="auth_actions">
-          <button id="logout_btn" type="button">Sign out</button>
-        </div>
-      </div>
-
-      <nav class="sidebar_nav">
-        <button class="nav_tab active" data-tab="overview_tab" type="button">Overview</button>
-        <button class="nav_tab" data-tab="site_tab" type="button">Site Content</button>
-        <button class="nav_tab" data-tab="projects_tab" type="button">Projects</button>
-        <button class="nav_tab" data-tab="posts_tab" type="button">Posts</button>
-        <button class="nav_tab" data-tab="resumes_tab" type="button">Resumes</button>
-        <button class="nav_tab" data-tab="work_tab" type="button">Work</button>
-        <button class="nav_tab" data-tab="academia_tab" type="button">Academia</button>
-        <button class="nav_tab" data-tab="awards_tab" type="button">Awards</button>
-      </nav>
-
-      <a class="view_site_link" href="index.html">View site</a>
-    </aside>
-
-    <main class="dashboard_main" id="admin_content">
-
-      <div class="topbar">
-        <div class="search_wrapper">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input id="search_input" type="text" placeholder="Search all content…" />
-        </div>
-      </div>
-
-      <!-- OVERVIEW -->
-      <section class="dashboard_tab active" id="overview_tab">
-        <div class="page_header">
-          <h2>Overview</h2>
-          <p>Manage your portfolio without editing HTML by hand.</p>
-        </div>
-        <div class="stats_grid">
-          <div class="panel stat_card"><h3>Projects</h3><p id="projects_count">0</p></div>
-          <div class="panel stat_card"><h3>Posts</h3><p id="posts_count">0</p></div>
-          <div class="panel stat_card"><h3>Resumes</h3><p id="resumes_count">0</p></div>
-          <div class="panel stat_card"><h3>Work</h3><p id="work_count">0</p></div>
-          <div class="panel stat_card"><h3>Academia</h3><p id="academia_count">0</p></div>
-          <div class="panel stat_card"><h3>Awards</h3><p id="awards_count">0</p></div>
-        </div>
-      </section>
-
-      <!-- SITE CONTENT -->
-      <section class="dashboard_tab" id="site_tab">
-        <div class="page_header"><h2>Site Content</h2><p>Edit your homepage and contact content.</p></div>
-        <form id="site_form" class="panel form_panel">
-          <div class="form_grid">
-            <div class="form_group"><label for="title_input">Title</label><input id="title_input" type="text" /></div>
-            <div class="form_group"><label for="subtitle_input">Subtitle</label><input id="subtitle_input" type="text" /></div>
-            <div class="form_group full_width"><label for="intro_input">Intro</label><textarea id="intro_input" rows="4"></textarea></div>
-            <div class="form_group full_width"><label for="about_input">About</label><textarea id="about_input" rows="6"></textarea></div>
-            <div class="form_group"><label for="email_input">Email</label><input id="email_input" type="text" /></div>
-            <div class="form_group"><label for="linkedin_input">LinkedIn</label><input id="linkedin_input" type="text" /></div>
-            <div class="form_group"><label for="github_input">GitHub</label><input id="github_input" type="text" /></div>
-            <div class="form_group"><label for="instagram_input">Instagram</label><input id="instagram_input" type="text" /></div>
-          </div>
-          <div class="form_actions"><button type="submit">Save Site Content</button></div>
-        </form>
-      </section>
-
-      <!-- PROJECTS -->
-      <section class="dashboard_tab" id="projects_tab">
-        <div class="page_header"><h2>Projects</h2><p>Add, edit, hide, or delete projects.</p></div>
-        <div class="dashboard_split always_split">
-          <div class="panel list_panel">
-            <div class="list_header"><h3>All Projects</h3><button id="new_project_btn" type="button">New Project</button></div>
-            <div id="projects_list" class="item_list"></div>
-          </div>
-          <form id="project_form" class="panel form_panel">
-            <input id="project_id" type="hidden" />
-            <div class="form_group"><label for="project_title">Title</label><input id="project_title" type="text" required /></div>
-            <div class="form_group"><label for="project_slug">Slug</label><input id="project_slug" type="text" placeholder="nsportfolio_game" /></div>
-            <div class="form_group"><label for="project_category">Category</label><input id="project_category" type="text" /></div>
-            <div class="form_group"><label for="project_link">Link</label><input id="project_link" type="text" /></div>
-            <div class="form_group"><label for="project_image_url">Image URL</label><input id="project_image_url" type="text" /></div>
-            <div class="form_group"><label for="project_sort_order">Sort Order</label><input id="project_sort_order" type="number" value="1" min="1" /></div>
-            <div class="form_group checkbox_group">
-              <label><input id="project_is_visible" type="checkbox" checked /> Visible</label>
-              <label><input id="project_is_featured" type="checkbox" /> Featured</label>
-            </div>
-            <div class="form_group full_width"><label for="project_description">Description</label><textarea id="project_description" rows="5"></textarea></div>
-            <div class="form_actions">
-              <button type="submit">Save Project</button>
-              <button id="reset_project_btn" type="button" class="secondary_btn">Clear</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- POSTS -->
-      <section class="dashboard_tab" id="posts_tab">
-        <div class="page_header"><h2>Posts</h2><p>Create and manage updates or blog posts.</p></div>
-        <div class="dashboard_split always_split">
-          <div class="panel list_panel">
-            <div class="list_header"><h3>All Posts</h3><button id="new_post_btn" type="button">New Post</button></div>
-            <div id="posts_list" class="item_list"></div>
-          </div>
-          <form id="post_form" class="panel form_panel">
-            <input id="post_id" type="hidden" />
-            <div class="form_group"><label for="post_title">Title</label><input id="post_title" type="text" required /></div>
-            <div class="form_group"><label for="post_slug">Slug</label><input id="post_slug" type="text" placeholder="my_post" /></div>
-            <div class="form_group"><label for="post_cover_image_url">Cover Image URL</label><input id="post_cover_image_url" type="text" /></div>
-            <div class="form_group"><label for="post_sort_order">Sort Order</label><input id="post_sort_order" type="number" value="1" min="1" /></div>
-            <div class="form_group checkbox_group"><label><input id="post_is_published" type="checkbox" checked /> Published</label></div>
-            <div class="form_group full_width"><label for="post_excerpt">Excerpt</label><textarea id="post_excerpt" rows="3"></textarea></div>
-            <div class="form_group full_width"><label for="post_content">Content</label><textarea id="post_content" rows="8"></textarea></div>
-            <div class="form_actions">
-              <button type="submit">Save Post</button>
-              <button id="reset_post_btn" type="button" class="secondary_btn">Clear</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- RESUMES -->
-      <section class="dashboard_tab" id="resumes_tab">
-        <div class="page_header"><h2>Resumes</h2><p>Store resume metadata and current resume links.</p></div>
-        <div class="dashboard_split always_split">
-          <div class="panel list_panel">
-            <div class="list_header"><h3>All Resumes</h3><button id="new_resume_btn" type="button">New Resume</button></div>
-            <div id="resumes_list" class="item_list"></div>
-          </div>
-          <form id="resume_form" class="panel form_panel">
-            <input id="resume_id" type="hidden" />
-            <div class="form_group"><label for="resume_title">Title</label><input id="resume_title" type="text" required /></div>
-            <div class="form_group"><label for="resume_file_name">File Name</label><input id="resume_file_name" type="text" /></div>
-            <div class="form_group full_width"><label for="resume_file_url">File URL</label><input id="resume_file_url" type="text" /></div>
-            <div class="form_group checkbox_group"><label><input id="resume_is_current" type="checkbox" /> Current Resume</label></div>
-            <div class="form_actions">
-              <button type="submit">Save Resume</button>
-              <button id="reset_resume_btn" type="button" class="secondary_btn">Clear</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- WORK -->
-      <section class="dashboard_tab" id="work_tab">
-        <div class="page_header">
-          <h2>Work</h2>
-          <p>Add and manage work entries. Entries with the same Organization are grouped together on the public site.</p>
-        </div>
-        <div class="dashboard_split" id="work_split">
-          <div class="panel list_panel">
-            <div class="list_header"><h3>All Work Entries</h3><button id="new_work_btn" type="button">New Entry</button></div>
-            <div id="work_list" class="item_list"></div>
-          </div>
-          <form id="work_form" class="panel form_panel entry_form_panel">
-            <input id="work_id" type="hidden" />
-            <div class="form_group"><label for="work_title">Job Title</label><input id="work_title" type="text" required placeholder="e.g. Software Engineer" /></div>
-            <div class="form_group">
-              <label for="work_category">Category</label>
-              <input id="work_category" type="text" placeholder="e.g. Full-time, Internship, Promotion, Transfer" />
-            </div>
-            <div class="form_group"><label for="work_organization">Organization</label><input id="work_organization" type="text" placeholder="e.g. Acme Corp" /></div>
-            <div class="form_group"><label for="work_date_range">Date / Year Range</label><input id="work_date_range" type="text" placeholder="e.g. 2022 – Present" /></div>
-            <div class="form_group">
-              <label for="work_sort_order">Sort Order <small style="font-weight:400;color:var(--text-muted)">(1 = newest, shown first)</small></label>
-              <input id="work_sort_order" type="number" value="1" min="1" />
-            </div>
-            <div class="form_group"><label for="work_link">Link</label><input id="work_link" type="text" placeholder="https://" /></div>
-            <div class="form_group full_width"><label for="work_description">Description</label><textarea id="work_description" rows="5"></textarea></div>
-            <div class="form_group checkbox_group">
-              <label><input id="work_is_visible" type="checkbox" checked /> Visible on site</label>
-            </div>
-            <div class="form_actions">
-              <button type="submit">Save Entry</button>
-              <button id="reset_work_btn" type="button" class="secondary_btn">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- ACADEMIA -->
-      <section class="dashboard_tab" id="academia_tab">
-        <div class="page_header"><h2>Academia</h2><p>Add and manage your academic history entries.</p></div>
-        <div class="dashboard_split" id="academia_split">
-          <div class="panel list_panel">
-            <div class="list_header"><h3>All Academia Entries</h3><button id="new_academia_btn" type="button">New Entry</button></div>
-            <div id="academia_list" class="item_list"></div>
-          </div>
-          <form id="academia_form" class="panel form_panel entry_form_panel">
-            <input id="academia_id" type="hidden" />
-            <div class="form_group"><label for="academia_title">Title</label><input id="academia_title" type="text" required placeholder="e.g. B.S. Computer Science" /></div>
-            <div class="form_group"><label for="academia_subtitle">Subtitle / Role</label><input id="academia_subtitle" type="text" placeholder="e.g. Minor in Mathematics" /></div>
-            <div class="form_group"><label for="academia_organization">Institution</label><input id="academia_organization" type="text" placeholder="e.g. MIT" /></div>
-            <div class="form_group"><label for="academia_date_range">Date / Year Range</label><input id="academia_date_range" type="text" placeholder="e.g. 2018 – 2022" /></div>
-            <div class="form_group"><label for="academia_sort_order">Sort Order</label><input id="academia_sort_order" type="number" value="1" min="1" /></div>
-            <div class="form_group"><label for="academia_link">Link</label><input id="academia_link" type="text" placeholder="https://" /></div>
-            <div class="form_group full_width"><label for="academia_description">Description</label><textarea id="academia_description" rows="5"></textarea></div>
-            <div class="form_group checkbox_group">
-              <label><input id="academia_is_visible" type="checkbox" checked /> Visible on site</label>
-            </div>
-            <div class="form_actions">
-              <button type="submit">Save Entry</button>
-              <button id="reset_academia_btn" type="button" class="secondary_btn">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-      <!-- AWARDS -->
-      <section class="dashboard_tab" id="awards_tab">
-        <div class="page_header"><h2>Awards</h2><p>Add and manage your awards and recognition entries.</p></div>
-        <div class="dashboard_split" id="awards_split">
-          <div class="panel list_panel">
-            <div class="list_header"><h3>All Awards Entries</h3><button id="new_awards_btn" type="button">New Entry</button></div>
-            <div id="awards_list" class="item_list"></div>
-          </div>
-          <form id="awards_form" class="panel form_panel entry_form_panel">
-            <input id="awards_id" type="hidden" />
-            <div class="form_group"><label for="awards_title">Title</label><input id="awards_title" type="text" required placeholder="e.g. Best Paper Award" /></div>
-            <div class="form_group"><label for="awards_subtitle">Subtitle / Role</label><input id="awards_subtitle" type="text" placeholder="e.g. First Place" /></div>
-            <div class="form_group"><label for="awards_organization">Organization</label><input id="awards_organization" type="text" placeholder="e.g. IEEE" /></div>
-            <div class="form_group"><label for="awards_date_range">Date / Year</label><input id="awards_date_range" type="text" placeholder="e.g. 2023" /></div>
-            <div class="form_group"><label for="awards_sort_order">Sort Order</label><input id="awards_sort_order" type="number" value="1" min="1" /></div>
-            <div class="form_group"><label for="awards_link">Link</label><input id="awards_link" type="text" placeholder="https://" /></div>
-            <div class="form_group full_width"><label for="awards_description">Description</label><textarea id="awards_description" rows="5"></textarea></div>
-            <div class="form_group checkbox_group">
-              <label><input id="awards_is_visible" type="checkbox" checked /> Visible on site</label>
-            </div>
-            <div class="form_actions">
-              <button type="submit">Save Entry</button>
-              <button id="reset_awards_btn" type="button" class="secondary_btn">Cancel</button>
-            </div>
-          </form>
-        </div>
-      </section>
-
-    </main>
-  </div>
-
-  <script type="module" src="scripts/admin.js"></script>
-</body>
+    <script type="module" src="scripts/admin.js"></script>
+  </body>
 </html>
