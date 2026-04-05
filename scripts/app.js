@@ -15,85 +15,113 @@ const escapeHtml = (value = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;')
 
-// ── Normalizers ───────────────────────────────────────────────────────────────
-
 const normalizeProjects = (items = []) =>
   items.map((item) => ({
-    project_id:  item.project_id || '',
-    title:       item.title || 'Untitled Project',
+    project_id: item.project_id || '',
+    title: item.title || 'Untitled Project',
     description: item.description || '',
-    category:    item.category || 'Project',
-    slug:        item.slug || '',
-    link:        item.link || '',
-    image_url:   item.image_url || '',
-    is_visible:  item.is_visible !== false,
+    category: item.category || 'Project',
+    slug: item.slug || '',
+    link: item.link || '',
+    image_url: item.image_url || '',
+    is_visible: item.is_visible !== false,
     is_featured: !!item.is_featured,
-    sort_order:  Number(item.sort_order || 9999)
+    sort_order: Number(item.sort_order || 9999)
   }))
 
 const normalizePosts = (items = []) =>
   items.map((item) => ({
-    post_id:         item.post_id || '',
-    title:           item.title || 'Untitled Post',
-    excerpt:         item.excerpt || '',
-    content:         item.content || '',
-    slug:            item.slug || '',
+    post_id: item.post_id || '',
+    title: item.title || 'Untitled Post',
+    excerpt: item.excerpt || '',
+    content: item.content || '',
+    slug: item.slug || '',
     cover_image_url: item.cover_image_url || '',
-    is_published:    item.is_published !== false,
-    sort_order:      Number(item.sort_order || 9999)
+    is_published: item.is_published !== false,
+    sort_order: Number(item.sort_order || 9999)
   }))
 
 const normalizeResumes = (items = []) =>
   items.map((item) => ({
-    resume_id:  item.resume_id || '',
-    title:      item.title || 'Current Resume',
-    file_name:  item.file_name || '',
-    file_url:   item.file_url || '',
+    resume_id: item.resume_id || '',
+    title: item.title || 'Current Resume',
+    file_name: item.file_name || '',
+    file_url: item.file_url || '',
     is_current: !!item.is_current
   }))
 
 const normalizeWork = (items = []) =>
   items.map((item) => ({
-    id:           item.work_id || '',
-    title:        item.title || '',
-    category:     item.category || '',
+    work_id: item.work_id || '',
+    title: item.title || '',
+    subtitle: item.subtitle || '',
     organization: item.organization || '',
-    date_range:   item.date_range || '',
-    description:  item.description || '',
-    link:         item.link || '',
-    sort_order:   Number(item.sort_order || 9999),
-    is_visible:   item.is_visible !== false,
+    description: item.description || '',
+    link: item.link || '',
+    start_date: item.start_date || '',
+    end_date: item.end_date || '',
+    is_current: !!item.is_current,
+    is_visible: item.is_visible !== false
   }))
 
 const normalizeEntries = (items = [], id_key) =>
   items.map((item) => ({
-    id:           item[id_key] || '',
-    title:        item.title || '',
-    subtitle:     item.subtitle || '',
+    id: item[id_key] || '',
+    title: item.title || '',
+    subtitle: item.subtitle || '',
     organization: item.organization || '',
-    date_range:   item.date_range || '',
-    description:  item.description || '',
-    link:         item.link || '',
-    sort_order:   Number(item.sort_order || 9999),
-    is_visible:   item.is_visible !== false,
+    date_range: item.date_range || '',
+    description: item.description || '',
+    link: item.link || '',
+    image_url: item.image_url || '',
+    sort_order: Number(item.sort_order || 9999)
   }))
 
-// ── Renderers ─────────────────────────────────────────────────────────────────
+const formatMonthLabel = (value = '') => {
+  if (!value) return ''
+  const [year, month] = String(value).split('-')
+  if (!year || !month) return value
+
+  const date = new Date(Number(year), Number(month) - 1, 1)
+  return date.toLocaleString('en-US', { month: 'short', year: 'numeric' })
+}
+
+const formatWorkDateRange = (item) => {
+  const start = formatMonthLabel(item.start_date)
+  const end = item.is_current ? 'Present' : formatMonthLabel(item.end_date)
+
+  if (start && end) return `${start} – ${end}`
+  if (start) return start
+  if (end) return end
+  return ''
+}
+
+const compareWorkItems = (a, b) => {
+  if (a.is_current && !b.is_current) return -1
+  if (!a.is_current && b.is_current) return 1
+  return String(b.start_date || '').localeCompare(String(a.start_date || ''))
+}
 
 const createProjectCard = (project) => {
   const href = project.link && project.link.trim() ? project.link.trim() : null
+  const tag = escapeHtml(project.category)
+  const title = escapeHtml(project.title)
+  const description = escapeHtml(project.description)
+
   const inner = `
     <article class='project_card'>
-      <span class='project_tag'>${escapeHtml(project.category)}</span>
-      <h3>${escapeHtml(project.title)}</h3>
-      <p>${escapeHtml(project.description)}</p>
+      <span class='project_tag'>${tag}</span>
+      <h3>${title}</h3>
+      <p>${description}</p>
     </article>
   `
+
   if (href) {
     const isExternal = /^https?:\/\//i.test(href)
     const target = isExternal ? " target='_blank' rel='noopener noreferrer'" : ''
     return `<a href='${escapeHtml(href)}' class='project_card_link'${target}>${inner}</a>`
   }
+
   return `<div class='project_card_link'>${inner}</div>`
 }
 
@@ -107,75 +135,113 @@ const createSeeMoreCard = () => `
   </a>
 `
 
-// A single role row inside a company card
-const createRoleRow = (entry) => {
-  const hasLink    = entry.link && entry.link.trim()
-  const isExternal = hasLink && /^https?:\/\//i.test(entry.link.trim())
-
-  return `
-    <div class='role_row'>
-      <div class='role_row_header'>
-        <div class='role_row_titles'>
-          <h4 class='role_title'>${escapeHtml(entry.title)}</h4>
-          ${entry.category ? `<span class='role_category_tag'>${escapeHtml(entry.category)}</span>` : ''}
-        </div>
-        ${entry.date_range ? `<span class='entry_date'>${escapeHtml(entry.date_range)}</span>` : ''}
-      </div>
-      ${entry.description ? `<p class='entry_description'>${escapeHtml(entry.description)}</p>` : ''}
-      ${hasLink ? `<a href='${escapeHtml(entry.link.trim())}' class='entry_link' ${isExternal ? "target='_blank' rel='noopener noreferrer'" : ''}>View →</a>` : ''}
-    </div>
-  `
-}
-
-// A company card grouping multiple roles
-const createCompanyCard = (org_name, roles) => `
-  <div class='company_card'>
-    <div class='company_card_header'>
-      <h3 class='company_name'>${escapeHtml(org_name)}</h3>
-    </div>
-    <div class='company_roles'>
-      ${roles.map(createRoleRow).join('')}
-    </div>
-  </div>
-`
-
-// Standalone entry card for academia / awards
 const createEntryCard = (entry) => {
-  const hasLink    = entry.link && entry.link.trim()
+  const hasImage = entry.image_url && entry.image_url.trim()
+  const hasLink = entry.link && entry.link.trim()
   const isExternal = hasLink && /^https?:\/\//i.test(entry.link.trim())
 
   return `
     <div class='entry_card'>
+      ${hasImage ? `<img src='${escapeHtml(entry.image_url)}' class='entry_image' alt='${escapeHtml(entry.title)}' />` : ''}
+
       <div class='entry_card_header'>
         <div class='entry_card_titles'>
           <h3 class='entry_title'>${escapeHtml(entry.title)}</h3>
-          ${entry.subtitle     ? `<p class='entry_subtitle'>${escapeHtml(entry.subtitle)}</p>` : ''}
+          ${entry.subtitle ? `<p class='entry_subtitle'>${escapeHtml(entry.subtitle)}</p>` : ''}
           ${entry.organization ? `<p class='entry_org'>${escapeHtml(entry.organization)}</p>` : ''}
         </div>
         ${entry.date_range ? `<span class='entry_date'>${escapeHtml(entry.date_range)}</span>` : ''}
       </div>
+
       ${entry.description ? `<p class='entry_description'>${escapeHtml(entry.description)}</p>` : ''}
+
       ${hasLink ? `<a href='${escapeHtml(entry.link.trim())}' class='entry_link' ${isExternal ? "target='_blank' rel='noopener noreferrer'" : ''}>View →</a>` : ''}
     </div>
   `
 }
 
-// ── Render functions ──────────────────────────────────────────────────────────
+const createWorkCompanyCard = (organization, roles) => {
+  const sortedRoles = [...roles].sort(compareWorkItems)
+  const newestRole = sortedRoles[0]
+
+  const overallStart = [...sortedRoles]
+    .map((role) => role.start_date || '')
+    .filter(Boolean)
+    .sort()[0] || ''
+
+  const hasCurrentRole = sortedRoles.some((role) => role.is_current)
+
+  const overallEnd = hasCurrentRole
+    ? 'Present'
+    : [...sortedRoles]
+        .map((role) => role.end_date || '')
+        .filter(Boolean)
+        .sort()
+        .slice(-1)[0] || ''
+
+  const companyDateRange = (() => {
+    const start = formatMonthLabel(overallStart)
+    const end = overallEnd === 'Present' ? 'Present' : formatMonthLabel(overallEnd)
+
+    if (start && end) return `${start} – ${end}`
+    if (start) return start
+    if (end) return end
+    return ''
+  })()
+
+  const roleItems = sortedRoles.map((role) => {
+    const roleDateRange = formatWorkDateRange(role)
+    const roleLink = role.link && role.link.trim()
+    const roleLinkHtml = roleLink
+      ? `<a href='${escapeHtml(roleLink.trim())}' class='entry_link' ${/^https?:\/\//i.test(roleLink.trim()) ? "target='_blank' rel='noopener noreferrer'" : ''}>View →</a>`
+      : ''
+
+    return `
+      <div class='work_role_item'>
+        <div class='work_role_header'>
+          <div class='work_role_titles'>
+            <h4 class='work_role_title'>${escapeHtml(role.title)}</h4>
+            ${role.subtitle ? `<p class='work_role_subtitle'>${escapeHtml(role.subtitle)}</p>` : ''}
+          </div>
+          ${roleDateRange ? `<span class='work_role_date'>${escapeHtml(roleDateRange)}</span>` : ''}
+        </div>
+        ${role.description ? `<p class='work_role_description'>${escapeHtml(role.description)}</p>` : ''}
+        ${roleLinkHtml}
+      </div>
+    `
+  }).join('')
+
+  return `
+    <div class='entry_card work_company_card'>
+      <div class='entry_card_header'>
+        <div class='entry_card_titles'>
+          <h3 class='entry_title'>${escapeHtml(organization)}</h3>
+          ${newestRole?.subtitle ? `<p class='entry_subtitle'>${escapeHtml(newestRole.subtitle)}</p>` : ''}
+        </div>
+        ${companyDateRange ? `<span class='entry_date'>${escapeHtml(companyDateRange)}</span>` : ''}
+      </div>
+
+      <div class='work_roles_list'>
+        ${roleItems}
+      </div>
+    </div>
+  `
+}
 
 const renderProjects = (items = []) => {
   const grid = getEl('projects_grid')
   if (!grid) return
 
-  const visible = normalizeProjects(items)
-    .filter((p) => p.is_visible)
+  const visibleProjects = normalizeProjects(items)
+    .filter((project) => project.is_visible)
     .sort((a, b) => a.sort_order - b.sort_order)
 
-  if (!visible.length) {
+  if (!visibleProjects.length) {
     grid.innerHTML = `<article class='project_card'><h3>No projects yet</h3><p>Add projects from the admin dashboard.</p></article>`
     return
   }
 
-  const cards = visible.slice(0, 5).map(createProjectCard)
+  const cards = visibleProjects.slice(0, 5).map(createProjectCard)
   cards.push(createSeeMoreCard())
   grid.innerHTML = cards.join('')
 }
@@ -185,7 +251,7 @@ const renderPosts = (items = []) => {
   if (!grid) return
 
   const published = normalizePosts(items)
-    .filter((p) => p.is_published)
+    .filter((post) => post.is_published)
     .sort((a, b) => a.sort_order - b.sort_order)
 
   if (!published.length) {
@@ -193,19 +259,24 @@ const renderPosts = (items = []) => {
     return
   }
 
-  grid.innerHTML = published.slice(0, 4).map((post) => `
-    <article class='project_card'>
-      <h3>${escapeHtml(post.title)}</h3>
-      <p>${escapeHtml(post.excerpt)}</p>
-    </article>
-  `).join('')
+  grid.innerHTML = published
+    .slice(0, 4)
+    .map((post) => `
+      <article class='project_card'>
+        <h3>${escapeHtml(post.title)}</h3>
+        <p>${escapeHtml(post.excerpt)}</p>
+      </article>
+    `)
+    .join('')
 }
 
 const renderResume = (items = []) => {
   const resumes = normalizeResumes(items)
-  const current = resumes.find((r) => r.is_current) || resumes[0]
-  const textEl  = getEl('current_resume_text')
-  const linkEl  = getEl('current_resume_link')
+  const current = resumes.find((resume) => resume.is_current) || resumes[0]
+
+  const textEl = getEl('current_resume_text')
+  const linkEl = getEl('current_resume_link')
+
   if (!textEl || !linkEl) return
 
   if (!current) {
@@ -215,6 +286,7 @@ const renderResume = (items = []) => {
   }
 
   textEl.textContent = current.title || 'Current Resume'
+
   if (current.file_url) {
     linkEl.href = current.file_url
     linkEl.style.display = 'inline-block'
@@ -227,45 +299,34 @@ const renderWork = (items = []) => {
   const container = getEl('work_grid')
   if (!container) return
 
-  // Only visible entries, sort_order ascending (1 = newest = top)
-  const entries = normalizeWork(items)
-    .filter((e) => e.is_visible)
-    .sort((a, b) => a.sort_order - b.sort_order)
+  const visibleRoles = normalizeWork(items)
+    .filter((role) => role.is_visible)
+    .sort(compareWorkItems)
 
-  if (!entries.length) {
+  if (!visibleRoles.length) {
     container.innerHTML = `<p class='entries_empty'>Work experience coming soon.</p>`
     return
   }
 
-  // Group by organization (case-insensitive). Entries with no org stay standalone.
-  const groups = new Map()
-  for (const entry of entries) {
-    const key = entry.organization.trim().toLowerCase() || `__solo__${entry.id}`
-    if (!groups.has(key)) groups.set(key, { org_name: entry.organization.trim(), roles: [] })
-    groups.get(key).roles.push(entry)
-  }
+  const grouped = visibleRoles.reduce((acc, role) => {
+    const key = role.organization || 'Unknown Organization'
+    if (!acc[key]) acc[key] = []
+    acc[key].push(role)
+    return acc
+  }, {})
 
-  // Sort groups so the group with the lowest sort_order entry appears first
-  const sorted_groups = [...groups.values()].sort((a, b) => {
-    const min_a = Math.min(...a.roles.map((r) => r.sort_order))
-    const min_b = Math.min(...b.roles.map((r) => r.sort_order))
-    return min_a - min_b
-  })
+  const groupedEntries = Object.entries(grouped)
+    .sort((a, b) => compareWorkItems(a[1][0], b[1][0]))
+    .map(([organization, roles]) => createWorkCompanyCard(organization, roles))
 
-  container.innerHTML = sorted_groups.map((group) =>
-    group.org_name
-      ? createCompanyCard(group.org_name, group.roles)
-      : group.roles.map(createEntryCard).join('')
-  ).join('')
+  container.innerHTML = groupedEntries.join('')
 }
 
 const renderEntries = (containerId, items = [], id_key, emptyMessage) => {
   const container = getEl(containerId)
   if (!container) return
 
-  // Only visible entries, sort ascending
   const entries = normalizeEntries(items, id_key)
-    .filter((e) => e.is_visible)
     .sort((a, b) => a.sort_order - b.sort_order)
 
   if (!entries.length) {
@@ -276,8 +337,6 @@ const renderEntries = (containerId, items = [], id_key, emptyMessage) => {
   container.innerHTML = entries.map(createEntryCard).join('')
 }
 
-// ── API ───────────────────────────────────────────────────────────────────────
-
 const apiGet = async (id) => {
   const response = await fetch(`${API_BASE}/content/${id}`)
   if (!response.ok) throw new Error(`Failed to load ${id}`)
@@ -285,11 +344,16 @@ const apiGet = async (id) => {
 }
 
 const safeGet = async (id) => {
-  try { return await apiGet(id) }
-  catch { return { items: [] } }
+  try {
+    return await apiGet(id)
+  } catch {
+    return { items: [] }
+  }
 }
 
-// ── Load ──────────────────────────────────────────────────────────────────────
+const finishLoading = () => {
+  document.body.classList.remove('loading')
+}
 
 const loadContent = async () => {
   try {
@@ -300,16 +364,16 @@ const loadContent = async () => {
       safeGet('resumes'),
       safeGet('work'),
       safeGet('academia'),
-      safeGet('awards'),
+      safeGet('awards')
     ])
 
-    setText('title',     site.title,     "Hi, I'm Nicky")
-    setText('subtitle',  site.subtitle,  'Student • Developer • Builder')
-    setText('intro',     site.intro,     'Welcome to my portfolio.')
-    setText('about',     site.about,     '')
-    setText('email',     site.email,     '')
-    setText('linkedin',  site.linkedin,  '')
-    setText('github',    site.github,    '')
+    setText('title', site.title, '')
+    setText('subtitle', site.subtitle, '')
+    setText('intro', site.intro, '')
+    setText('about', site.about, '')
+    setText('email', site.email, '')
+    setText('linkedin', site.linkedin, '')
+    setText('github', site.github, '')
     setText('instagram', site.instagram, '')
 
     renderProjects(projects.items || [])
@@ -317,10 +381,11 @@ const loadContent = async () => {
     renderResume(resumes.items || [])
     renderWork(work.items || [])
     renderEntries('academia_grid', academia.items || [], 'academia_id', 'Academic background coming soon.')
-    renderEntries('awards_grid',   awards.items   || [], 'awards_id',   'Awards and achievements coming soon.')
-
+    renderEntries('awards_grid', awards.items || [], 'awards_id', 'Awards and achievements coming soon.')
   } catch (error) {
     console.error('Failed to load portfolio content:', error)
+  } finally {
+    finishLoading()
   }
 }
 

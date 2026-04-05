@@ -251,6 +251,66 @@ a {
   justify-content: center;
   min-height: 100%;
 }
+.work_company_card {
+  display: grid;
+  gap: 16px;
+}
+
+.work_roles_list {
+  display: grid;
+  gap: 14px;
+}
+
+.work_role_item {
+  padding-top: 14px;
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.work_role_item:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.work_role_header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.work_role_titles {
+  display: grid;
+  gap: 4px;
+}
+
+.work_role_title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.work_role_subtitle {
+  margin: 0;
+  opacity: 0.75;
+  font-size: 0.92rem;
+}
+
+.work_role_date {
+  white-space: nowrap;
+  font-size: 0.9rem;
+  opacity: 0.75;
+}
+
+.work_role_description {
+  margin: 10px 0 0;
+}
+
+.entry_image {
+  width: 100%;
+  height: 160px;
+  object-fit: cover;
+  border-radius: 12px;
+  margin-bottom: 12px;
+}
 
 .contact_grid {
   display: grid;
