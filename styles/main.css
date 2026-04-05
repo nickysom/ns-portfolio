@@ -78,32 +78,13 @@ a {
   color: var(--accent);
 }
 
-.hero {
-  position: relative;
-  overflow: hidden;
-}
-
-.hero_content {
-  position: relative;
-  z-index: 2;
-}
-
-.hero_wave {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  width: 100%;
-  height: auto;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 0.9;
-}
-
 .hero_banner {
   min-height: 78vh;
   display: flex;
   align-items: center;
-
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
   background: linear-gradient(
     270deg,
     #fff8fb,
@@ -112,9 +93,28 @@ a {
     #fff1f6,
     #fff8fb
   );
-
   background-size: 400% 400%;
-  animation: waveFlow 5s ease infinite;
+  animation: waveFlow 6s linear infinite;
+}
+
+.hero_banner::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='1600' height='900' viewBox='0 0 1600 900' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 220C120 180 240 180 360 220C480 260 600 260 720 220C840 180 960 180 1080 220C1200 260 1320 260 1440 220C1520 195 1560 190 1600 200' stroke='%23c2185b' stroke-opacity='0.18' stroke-width='3'/%3E%3Cpath d='M0 360C120 320 240 320 360 360C480 400 600 400 720 360C840 320 960 320 1080 360C1200 400 1320 400 1440 360C1520 335 1560 330 1600 340' stroke='%23c2185b' stroke-opacity='0.16' stroke-width='3'/%3E%3Cpath d='M0 500C120 460 240 460 360 500C480 540 600 540 720 500C840 460 960 460 1080 500C1200 540 1320 540 1440 500C1520 475 1560 470 1600 480' stroke='%23c2185b' stroke-opacity='0.14' stroke-width='3'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.hero_content {
+  position: relative;
+  z-index: 1;
+  padding: 80px 0;
+  text-align: center;
 }
 
 @keyframes waveFlow {
@@ -288,6 +288,7 @@ a {
   justify-content: center;
   min-height: 100%;
 }
+
 .work_company_card {
   display: grid;
   gap: 16px;
@@ -449,5 +450,10 @@ a {
 
   .hero_buttons {
     justify-content: flex-start;
+  }
+
+  .hero_text {
+    margin-left: 0;
+    margin-right: 0;
   }
 }
