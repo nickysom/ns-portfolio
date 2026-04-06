@@ -1,248 +1,291 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nick's Portfolio Site</title>
-  <link rel="stylesheet" href="styles/main.css" />
-  <style>
-    /* ── Entry cards (work / academia / awards) ── */
-    .entry_list {
-      display: grid;
-      gap: 20px;
-    }
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nick's Portfolio</title>
+    <link rel="stylesheet" href="styles/main.css" />
+    <style>
+      /* ── Entry cards (work / academia / awards) ── */
+      .entry_list {
+        display: grid;
+        gap: 20px;
+      }
+      .entry_card {
+        background: var(--bg-panel, #fff);
+        border: 1px solid var(--border, rgba(173, 39, 86, 0.12));
+        border-radius: 18px;
+        padding: 22px 26px;
+        display: grid;
+        gap: 10px;
+      }
+      .entry_card_header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .entry_card_titles {
+        display: grid;
+        gap: 3px;
+      }
+      .entry_title {
+        font-size: 1.1rem;
+        color: var(--text-main, #2f1120);
+        margin: 0;
+      }
+      .entry_subtitle {
+        font-size: 0.92rem;
+        color: var(--accent, #c2185b);
+        margin: 0;
+        font-weight: 600;
+      }
+      .entry_org {
+        font-size: 0.88rem;
+        color: var(--text-soft, #6f4257);
+        margin: 0;
+      }
+      .entry_date {
+        font-size: 0.82rem;
+        color: var(--text-muted, #9b6d82);
+        white-space: nowrap;
+        background: var(--accent-pale, rgba(194, 24, 91, 0.06));
+        border-radius: 8px;
+        padding: 4px 10px;
+        flex-shrink: 0;
+      }
+      .entry_description {
+        font-size: 0.93rem;
+        color: var(--text-soft, #6f4257);
+        line-height: 1.65;
+        margin: 0;
+      }
+      .entry_link {
+        font-size: 0.88rem;
+        color: var(--accent, #c2185b);
+        font-weight: 600;
+        text-decoration: none;
+        width: fit-content;
+      }
+      .entry_link:hover {
+        text-decoration: underline;
+      }
+      .entries_empty {
+        color: var(--text-muted, #9b6d82);
+        font-style: italic;
+      }
+    </style>
+  </head>
 
-    .entry_card {
-      background: var(--bg-panel, #fff);
-      border: 1px solid var(--border, rgba(173,39,86,0.12));
-      border-radius: 18px;
-      padding: 22px 26px;
-      display: grid;
-      gap: 10px;
-    }
-
-    .entry_card_header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
-    }
-
-    .entry_card_titles {
-      display: grid;
-      gap: 3px;
-    }
-
-    .entry_title {
-      font-size: 1.1rem;
-      color: var(--text-main, #2f1120);
-      margin: 0;
-    }
-
-    .entry_subtitle {
-      font-size: 0.92rem;
-      color: var(--accent, #c2185b);
-      margin: 0;
-      font-weight: 600;
-    }
-
-    .entry_org {
-      font-size: 0.88rem;
-      color: var(--text-soft, #6f4257);
-      margin: 0;
-    }
-
-    .entry_date {
-      font-size: 0.82rem;
-      color: var(--text-muted, #9b6d82);
-      white-space: nowrap;
-      background: var(--accent-pale, rgba(194,24,91,0.06));
-      border-radius: 8px;
-      padding: 4px 10px;
-      flex-shrink: 0;
-    }
-
-    .entry_description {
-      font-size: 0.93rem;
-      color: var(--text-soft, #6f4257);
-      line-height: 1.65;
-      margin: 0;
-    }
-
-    .entry_link {
-      font-size: 0.88rem;
-      color: var(--accent, #c2185b);
-      font-weight: 600;
-      text-decoration: none;
-      width: fit-content;
-    }
-
-    .entry_link:hover { text-decoration: underline; }
-
-    .entries_empty {
-      color: var(--text-muted, #9b6d82);
-      font-style: italic;
-    }
-  </style>
-</head>
-<body>
-  <header class="site_header">
-    <div class="container header_inner">
-      <a href="#home" class="logo">Nick's Portfolio Site</a>
-
-      <nav class="main_nav">
-        <a href="#about_section">About</a>
-        <a href="#projects_section">Projects</a>
-        <a href="#posts_section">Posts</a>
-        <a href="#resume_section">Resume</a>
-        <a href="#academia_section">Academia</a>
-        <a href="#work_section">Work</a>
-        <a href="#awards_section">Awards</a>
-        <a href="#contact_section">Contact</a>
-      </nav>
-    </div>
-  </header>
-
-  <section id="home" class="hero_banner">
-    <div class="container hero_content">
-      <p class="hero_subtitle" id="subtitle">Student • Developer • Builder</p>
-      <h1 id="title">Hi, I'm Nicky!</h1>
-      <p class="hero_text" id="intro">
-        Loading portfolio...
-      </p>
-      <div class="hero_buttons">
-        <a href="#projects_section" class="button_primary">View Projects</a>
-        <a href="#contact_section" class="button_secondary">Contact</a>
+  <body>
+    <header class="site_header">
+      <div class="header_inner">
+        <a href="#home" class="logo">Nick's Portfolio</a>
+        <nav class="main_nav">
+          <a href="#about_section">About</a>
+          <a href="#projects_section">Projects</a>
+          <a href="#posts_section">Posts</a>
+          <a href="#resume_section">Resume</a>
+          <a href="#academia_section">Academia</a>
+          <a href="#work_section">Work</a>
+          <a href="#awards_section">Awards</a>
+          <a href="#photography_section">Photography</a>
+          <a href="#contact_section">Contact</a>
+          <a href="admin.html" class="nav_profile_link" title="Admin Login">
+            <img
+              src="assets/icons/profile_icon.svg"
+              alt="Admin"
+              class="nav_profile_icon"
+            />
+          </a>
+        </nav>
       </div>
-    </div>
-  </section>
+    </header>
 
-  <main>
-    <section id="about_section" class="content_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">About</p>
-          <h2>About Me</h2>
-        </div>
-        <div class="text_card">
-          <p id="about">Loading about section...</p>
-        </div>
+    <section id="home" class="hero_banner">
+      <div class="container hero_content">
+        <p class="hero_subtitle" id="subtitle">Student • Developer • Builder</p>
+        <h1 id="title">Hi, I'm Nicky!</h1>
+        <p class="hero_text" id="intro">Loading portfolio...</p>
       </div>
     </section>
 
-    <section id="resume_section" class="content_section alt_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">Resume</p>
-          <h2>Current Resume</h2>
-        </div>
-        <div class="text_card" id="current_resume_wrap">
-          <p id="current_resume_text">Loading resume...</p>
-          <div class="hero_buttons" style="justify-content:flex-start; margin-top:18px;">
-            <a id="current_resume_link" href="#" class="button_primary" target="_blank" rel="noopener noreferrer">View Resume</a>
+    <main>
+      <section id="about_section" class="content_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">About</p>
+            <h2>About Me</h2>
+          </div>
+          <div class="text_card">
+            <p id="about">Loading about section...</p>
           </div>
         </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="projects_section" class="content_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">Portfolio</p>
-          <h2>Projects</h2>
+      <section id="resume_section" class="content_section alt_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Resume</p>
+            <h2>Current Resume</h2>
+          </div>
+          <div class="text_card" id="current_resume_wrap">
+            <p id="current_resume_text">Loading resume...</p>
+            <div
+              class="hero_buttons"
+              style="justify-content: flex-start; margin-top: 18px"
+            >
+              <a
+                id="current_resume_link"
+                href="#"
+                class="button_primary"
+                target="_blank"
+                rel="noopener noreferrer"
+                >View Resume</a
+              >
+            </div>
+          </div>
         </div>
-        <div class="project_grid" id="projects_grid">
-          <article class="project_card"><h3>Loading projects...</h3></article>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="posts_section" class="content_section alt_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">Posts</p>
-          <h2>Latest Updates</h2>
+      <section id="projects_section" class="content_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Portfolio</p>
+            <h2>Projects</h2>
+          </div>
+          <div class="project_grid" id="projects_grid">
+            <article class="project_card"><h3>Loading projects...</h3></article>
+          </div>
         </div>
-        <div class="project_grid" id="posts_grid">
-          <article class="project_card"><h3>Loading posts...</h3></article>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="academia_section" class="content_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">Academia</p>
-          <h2>Academic Background</h2>
+      <section id="posts_section" class="content_section alt_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Posts</p>
+            <h2>Latest Updates</h2>
+          </div>
+          <div class="project_grid" id="posts_grid">
+            <article class="project_card"><h3>Loading posts...</h3></article>
+          </div>
         </div>
-        <div class="entry_list" id="academia_grid">
-          <p class="entries_empty">Loading...</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="work_section" class="content_section alt_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">Work</p>
-          <h2>Professional Experience</h2>
+      <section id="academia_section" class="content_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Academia</p>
+            <h2>Academic Background</h2>
+          </div>
+          <div class="entry_list" id="academia_grid">
+            <p class="entries_empty">Loading...</p>
+          </div>
         </div>
-        <div class="entry_list" id="work_grid">
-          <p class="entries_empty">Loading...</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="awards_section" class="content_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">Awards</p>
-          <h2>Achievements</h2>
+      <section id="work_section" class="content_section alt_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Work</p>
+            <h2>Professional Experience</h2>
+          </div>
+          <div class="entry_list" id="work_grid">
+            <p class="entries_empty">Loading...</p>
+          </div>
         </div>
-        <div class="entry_list" id="awards_grid">
-          <p class="entries_empty">Loading...</p>
-        </div>
-      </div>
-    </section>
+      </section>
 
-    <section id="contact_section" class="content_section alt_section">
-      <div class="container">
-        <div class="section_heading">
-          <p class="section_label">Contact</p>
-          <h2>Get In Touch</h2>
+      <section id="awards_section" class="content_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Awards</p>
+            <h2>Achievements</h2>
+          </div>
+          <div class="entry_list" id="awards_grid">
+            <p class="entries_empty">Loading...</p>
+          </div>
         </div>
-        <div class="contact_grid">
-          <div class="contact_card"><h3>Email</h3><p id="email">your@email.com</p></div>
-          <div class="contact_card"><h3>LinkedIn</h3><p id="linkedin">your_linkedin</p></div>
-          <div class="contact_card"><h3>GitHub</h3><p id="github">your_github</p></div>
-          <div class="contact_card"><h3>Instagram</h3><p id="instagram">your_instagram</p></div>
+      </section>
+
+      <section id="photography_section" class="content_section alt_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Photography</p>
+            <h2>Portfolio</h2>
+          </div>
+          <div class="photo_list" id="photography_grid">
+            <p class="photo_empty">Loading...</p>
+          </div>
         </div>
-      </div>
-    </section>
-  </main>
+      </section>
 
-  <footer class="site_footer">
-    <div class="container footer_inner">
-      <div class="footer_left">
-        <h3>Nicky</h3>
-        <p>Portfolio featuring projects in development, design, analytics, cloud solutions, and academic work.</p>
-      </div>
-      <div class="footer_right">
-        <a href="#about_section">About</a>
-        <a href="#projects_section">Projects</a>
-        <a href="#posts_section">Posts</a>
-        <a href="#resume_section">Resume</a>
-        <a href="#academia_section">Academia</a>
-        <a href="#work_section">Work</a>
-        <a href="#awards_section">Awards</a>
-        <a href="#contact_section">Contact</a>
-      </div>
-    </div>
-    <div class="container footer_bottom">
-      <p>© 2026 Nicky. All rights reserved.</p>
-    </div>
-  </footer>
+      <section id="contact_section" class="content_section">
+        <div class="container">
+          <div class="section_heading">
+            <p class="section_label">Contact</p>
+            <h2>Get In Touch</h2>
+          </div>
 
-  <script type="module" src="scripts/app.js"></script>
-</body>
+          <div class="contact_grid">
+            <div class="contact_card">
+              <h3>
+                <img
+                  src="assets/icons/email_icon.svg"
+                  alt="Email"
+                  class="contact_icon"
+                />
+                Email
+              </h3>
+              <p id="email">Loading...</p>
+            </div>
+
+            <div class="contact_card">
+              <h3>
+                <img
+                  src="assets/icons/linkedin_icon.svg"
+                  alt="LinkedIn"
+                  class="contact_icon"
+                />
+                LinkedIn
+              </h3>
+              <p id="linkedin">Loading...</p>
+            </div>
+
+            <div class="contact_card">
+              <h3>
+                <img
+                  src="assets/icons/github_icon.svg"
+                  alt="GitHub"
+                  class="contact_icon"
+                />
+                GitHub
+              </h3>
+              <p id="github">Loading...</p>
+            </div>
+
+            <div class="contact_card">
+              <h3>
+                <img
+                  src="assets/icons/instagram_icon.svg"
+                  alt="Instagram"
+                  class="contact_icon"
+                />
+                Instagram
+              </h3>
+              <p id="instagram">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site_footer">
+      <div class="footer_inner">
+        <p class="footer_copy">© 2026 Nicky. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script type="module" src="scripts/app.js"></script>
+  </body>
 </html>
