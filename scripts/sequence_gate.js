@@ -151,6 +151,85 @@ async function refresh_sequence_state() {
   }
 }
 
+
+function get_fake_terminal_response(input_text) {
+  const clean_input = input_text.trim().toLowerCase();
+
+  const fake_command_map = {
+    "sudo": "[DENIED] nice try\nthis terminal does not negotiate with sudo",
+    "sudo su": "[DENIED] elevation refused\nroot is already disappointed in you",
+    "ls": "[EMPTY] nothing useful here\ntry reading the screen for once",
+    "dir": "[EMPTY] windows instincts detected\nsequence gate remains unimpressed",
+    "pwd": "[PATH] /dev/null/hope",
+    "whoami": "[IDENTITY] definitely not authorized yet",
+    "help": "[HELP] read the visible token\nenter the visible token",
+    "clear": "[NOTICE] screen persistence enabled\nno escape from your mistakes",
+    "cls": "[NOTICE] this is not cmd.exe",
+    "exit": "[LOCKED] session remains open\nfinish what you started",
+    "logout": "[LOCKED] you are not logged in enough to log out",
+    "rm -rf /": "[ALERT] dramatic\nbut ineffective",
+    "shutdown": "[NOTICE] system refuses to participate in your villain arc",
+    "reboot": "[NOTICE] reboot denied\ntry using your eyes instead",
+    "net user": "[NOTICE] wrong terminal\nwrong energy",
+    "ipconfig": "[NOTICE] windows command detected\nconfidence not found",
+    "ifconfig": "[NOTICE] network curiosity noted\naccess still denied",
+    "cd": "[LOCKED] directory movement disabled",
+    "cat": "[NOTICE] no files to read\nonly consequences",
+    "man": "[MANUAL] step 1 read the sequence\nstep 2 type it correctly",
+    "sudo rm -rf /": "[CRITICAL] wow\nstill no"
+  };
+
+  if (fake_command_map[clean_input]) {
+    return fake_command_map[clean_input];
+  }
+
+  if (clean_input.startsWith("sudo ")) {
+    return "[DENIED] nice try\nthis command is not accepted here";
+  }
+
+  if (clean_input.startsWith("rm ")) {
+    return "[LOCKED] destructive commands disabled\nemotionally and technically";
+  }
+
+  if (clean_input.startsWith("cd ")) {
+    return "[LOCKED] navigation disabled\nstay focused";
+  }
+
+  if (clean_input.startsWith("cat ")) {
+    return "[NOTICE] file access unavailable\nthis is a gate, not a filesystem";
+  }
+
+  if (clean_input.startsWith("echo ")) {
+    return "[ECHO] " + input_text.slice(5);
+  }
+
+  if (clean_input.includes("powershell")) {
+    return "[NOTICE] powershell will not save you here";
+  }
+
+  return "";
+}
+
+function handle_fake_terminal_command() {
+  const clean_input = typed_text.trim();
+
+  if (!clean_input) {
+    return false;
+  }
+
+  const fake_response = get_fake_terminal_response(clean_input);
+
+  if (!fake_response) {
+    return false;
+  }
+
+  set_response_text(fake_response, "error");
+  set_state_text("command_rejected");
+  typed_text = "";
+  render_typed_command();
+  return true;
+}
+
 async function submit_sequence_gate() {
   const code = typed_text.trim();
 
