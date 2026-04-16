@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF_8" />
+  <meta name="viewport" content="width=device_width, initial_scale=1.0" />
+  <title>Sequence Gate</title>
+  <link rel="stylesheet" href="../styles/sequence_gate.css" />
+</head>
+<body>
+  <main class="terminal_shell" id="terminal_shell">
+    <header class="terminal_topbar">
+      <div class="terminal_title">sequence_gate://terminal</div>
+      <div class="terminal_dots">
+        <span class="dot"></span>
+        <span class="dot"></span>
+        <span class="dot"></span>
+      </div>
+    </header>
+
+    <section class="terminal_screen">
+      <p class="boot_line">[BOOT] sequence gate initialized</p>
+      <p class="boot_line">[INFO] visible token rotates automatically</p>
+
+      <div class="status_row">
+        <span class="status_chip" id="timer_chip">window_sync::__::__</span>
+        <span class="status_chip" id="state_chip">state::awaiting_input</span>
+      </div>
+
+      <section class="noise_box">
+        <div class="noise_content" id="noise_content">Loading sequence field...</div>
+      </section>
+
+      <section class="prompt_block">
+        <div class="prompt_line">
+          <span class="prompt_symbol">root@sequence_gate:~$</span>
+          <span class="typed_command" id="typed_command">
+            <span class="ghost_text">type the visible sequence and press enter</span>
+          </span>
+          <span class="cursor_block">█</span>
+        </div>
+
+        <div class="response_box" id="response_box"></div>
+      </section>
+    </section>
+  </main>
+
+  <script src="/sequence_gate.js"></script>
+</body>
+</html>

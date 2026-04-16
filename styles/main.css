@@ -79,7 +79,8 @@ a {
 }
 .container {
   width: min(1400px, 100%);
-  margin: 0 auto;
+  margin: 3rem auto;
+  padding: 0 20px;
 }
 
 /* ─── HEADER ─── */
@@ -635,26 +636,118 @@ a {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
-@media (max-width: 700px) {
-  .header_inner {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 16px 0;
-  }
+
+/* ======================================================
+   MOBILE FIRST (default = phones)
+====================================================== */
+
+/* Header layout */
+.site_header {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+}
+
+.header_inner {
+  min-height: 64px;
+  padding: 16px 20px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  display: flex;
+}
+
+/* Logo */
+.logo {
+  font-family: "Caveat", cursive;
+  font-size: 2.2rem;
+  font-weight: 700;
+  color: #000000;
+  transition: color 0.2s ease;
+}
+
+/* Nav links (minimal style) */
+.main_nav {
+  width: 100%;
+  flex-wrap: wrap;
+  gap: 0;
+  display: flex;
+}
+
+.main_nav a {
+  font-size: 1rem;
+  color: var(--text-soft);
+  padding: 4px 0;
+  margin-right: 24px;
+  border-radius: 0;
+  background: none;
+  position: relative;
+  transition: color 0.2s ease;
+}
+
+.main_nav a:last-child {
+  margin-right: 0;
+}
+
+.main_nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.25s ease;
+}
+.main_nav a:hover, 
+.main_nav a.active {
+  color: var(--accent);
+}
+.main_nav a:hover::after,
+.main_nav a.active::after {
+  width: 100%;
+}
+
+/* ===========================
+   MOBILE + TABLET NAVIGATION
+=========================== */
+
+/* Hide nav links, show menu icon on mobile/tablet */
+@media (max-width: 1024px) {
   .main_nav {
-    gap: 4px;
+    display: none;
+  }.menu_toggle {
+    display: block;
+    cursor: pointer;
+    font-size: 2rem;
+    padding: 10px;
+    background: none;
+    border: none;
+    color: var(--text-main);
   }
-  .hero_content {
-    text-align: left;
+}
+
+/* Hide profile icon on mobile/tablet */
+@media (max-width: 1024px) {
+  .nav_profile_link {
+    display: none !important;
   }
-  .hero_content h1 {
-    font-size: 2.6rem;
+}
+
+@media (min-width: 1025px) {
+  .menu_toggle {
+    display: none !important;
   }
-  .hero_buttons {
-    justify-content: flex-start;
-  }
-  .hero_text {
-    margin-left: 0;
-    margin-right: 0;
+}
+
+@media (min-width: 1025px) {.header_inner {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 48px;
   }
 }

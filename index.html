@@ -80,6 +80,7 @@
   <body class="loading">
     <header class="site_header">
       <div class="header_inner">
+        <button class="menu_toggle" aria-label="Open menu">☰</button>
         <a href="#home" class="logo">Nick's Portfolio</a>
         <nav class="main_nav">
           <a href="#about_section">About</a>
@@ -285,6 +286,14 @@
         <p class="footer_copy">© 2026 Nicky. All rights reserved.</p>
       </div>
     </footer>
+
+    <script>
+      const menuToggle = document.querySelector(".menu_toggle");
+      const mainNav = document.querySelector(".main_nav");
+      menuToggle.addEventListener("click", () => {
+        mainNav.classList.toggle("open");
+      });
+    </script>
 
     <script type="module" src="scripts/app.js"></script>
   </body>
