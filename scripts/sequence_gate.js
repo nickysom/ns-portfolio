@@ -36,7 +36,7 @@ function make_random_line() {
     "VECTOR_PASS",
     "CACHE_RING",
     "KERNEL_EDGE",
-    "ACCESS_FIELD",
+    "ACCESS_FIELD"
   ];
 
   const label = labels[Math.floor(Math.random() * labels.length)];
@@ -75,7 +75,7 @@ function build_noise_block(sequence_value) {
           '   <span class="active_sequence">' +
           sequence_value +
           "</span>   " +
-          make_random_segment(6),
+          make_random_segment(6)
       );
     } else {
       line_list.push(make_random_line());
@@ -95,6 +95,7 @@ function render_timer() {
   const safe_seconds = Number.isFinite(seconds_remaining)
     ? Math.max(seconds_remaining, 0)
     : 0;
+
   const minutes = Math.floor(safe_seconds / 60);
   const seconds = safe_seconds % 60;
 
@@ -157,28 +158,27 @@ function get_fake_terminal_response(input_text) {
   const clean_input = input_text.trim().toLowerCase();
 
   const fake_command_map = {
-    sudo: "[DENIED] nice try\nthis terminal does not negotiate with sudo",
-    "sudo su":
-      "[DENIED] elevation refused\nroot is already disappointed in you",
-    ls: "[EMPTY] nothing useful here\ntry reading the screen for once",
-    dir: "[EMPTY] windows instincts detected\nsequence gate remains unimpressed",
-    pwd: "[PATH] /dev/null/hope",
-    whoami: "[IDENTITY] definitely not authorized yet",
-    help: "[HELP] read the visible token\nenter the visible token",
-    clear: "[NOTICE] screen persistence enabled\nno escape from your mistakes",
-    cls: "[NOTICE] this is not cmd.exe",
-    exit: "[LOCKED] session remains open\nfinish what you started",
-    logout: "[LOCKED] you are not logged in enough to log out",
+    "sudo": "[DENIED] nice try\nthis terminal does not negotiate with sudo",
+    "sudo su": "[DENIED] elevation refused\nroot is already disappointed in you",
+    "ls": "[EMPTY] nothing useful here\ntry reading the screen for once",
+    "dir": "[EMPTY] windows instincts detected\nsequence gate remains unimpressed",
+    "pwd": "[PATH] /dev/null/hope",
+    "whoami": "[IDENTITY] definitely not authorized yet",
+    "help": "[HELP] read the visible token\nenter the visible token",
+    "clear": "[NOTICE] screen persistence enabled\nno escape from your mistakes",
+    "cls": "[NOTICE] this is not cmd.exe",
+    "exit": "[LOCKED] session remains open\nfinish what you started",
+    "logout": "[LOCKED] you are not logged in enough to log out",
     "rm -rf /": "[ALERT] dramatic\nbut ineffective",
-    shutdown: "[NOTICE] system refuses to participate in your villain arc",
-    reboot: "[NOTICE] reboot denied\ntry using your eyes instead",
+    "shutdown": "[NOTICE] system refuses to participate in your villain arc",
+    "reboot": "[NOTICE] reboot denied\ntry using your eyes instead",
     "net user": "[NOTICE] wrong terminal\nwrong energy",
-    ipconfig: "[NOTICE] windows command detected\nconfidence not found",
-    ifconfig: "[NOTICE] network curiosity noted\naccess still denied",
-    cd: "[LOCKED] directory movement disabled",
-    cat: "[NOTICE] no files to read\nonly consequences",
-    man: "[MANUAL] step 1 read the sequence\nstep 2 type it correctly",
-    "sudo rm -rf /": "[CRITICAL] wow\nstill no",
+    "ipconfig": "[NOTICE] windows command detected\nconfidence not found",
+    "ifconfig": "[NOTICE] network curiosity noted\naccess still denied",
+    "cd": "[LOCKED] directory movement disabled",
+    "cat": "[NOTICE] no files to read\nonly consequences",
+    "man": "[MANUAL] step 1 read the sequence\nstep 2 type it correctly",
+    "sudo rm -rf /": "[CRITICAL] wow\nstill no"
   };
 
   if (fake_command_map[clean_input]) {
@@ -219,6 +219,39 @@ function handle_fake_terminal_command() {
     return false;
   }
 
+  const lower_input = clean_input.toLowerCase();
+
+  const looks_like_terminal_command =
+    lower_input === "sudo" ||
+    lower_input === "ls" ||
+    lower_input === "dir" ||
+    lower_input === "pwd" ||
+    lower_input === "whoami" ||
+    lower_input === "help" ||
+    lower_input === "clear" ||
+    lower_input === "cls" ||
+    lower_input === "exit" ||
+    lower_input === "logout" ||
+    lower_input === "shutdown" ||
+    lower_input === "reboot" ||
+    lower_input === "ipconfig" ||
+    lower_input === "ifconfig" ||
+    lower_input === "man" ||
+    lower_input === "net user" ||
+    lower_input === "sudo su" ||
+    lower_input === "rm -rf /" ||
+    lower_input === "sudo rm -rf /" ||
+    lower_input.startsWith("sudo ") ||
+    lower_input.startsWith("cd ") ||
+    lower_input.startsWith("cat ") ||
+    lower_input.startsWith("rm ") ||
+    lower_input.startsWith("echo ") ||
+    lower_input.includes("powershell");
+
+  if (!looks_like_terminal_command) {
+    return false;
+  }
+
   const fake_response = get_fake_terminal_response(clean_input);
 
   if (!fake_response) {
@@ -248,9 +281,9 @@ async function submit_sequence_gate() {
     const response = await fetch(`${api_base_url}/api/sequence_gate`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code })
     });
 
     const data = await response.json();
@@ -262,7 +295,7 @@ async function submit_sequence_gate() {
     if (data.success) {
       set_response_text(
         "[OK] gate accepted\n[REDIRECT] opening admin login",
-        "success",
+        "success"
       );
       set_state_text("accepted");
 
