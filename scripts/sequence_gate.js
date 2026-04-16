@@ -92,7 +92,7 @@ function render_typed_command() {
 }
 
 function render_timer() {
-  const safe_seconds = Math.max(seconds_remaining, 0);
+  const safe_seconds = Number.isFinite(seconds_remaining) ? Math.max(seconds_remaining, 0) : 0;
   const minutes = Math.floor(safe_seconds / 60);
   const seconds = safe_seconds % 60;
 
@@ -125,6 +125,14 @@ async function refresh_sequence_state() {
     const response = await fetch(`${api_base_url}/api/sequence_state`);
     const data = await response.json();
 
+    if (!response.ok) {
+      throw new Error(data.message || "Sequence state request failed");
+    }
+
+    if (!data.active_sequence || typeof data.next_change_in !== "number") {
+      throw new Error("API returned invalid sequence data");
+    }
+
     active_sequence = data.active_sequence;
     seconds_remaining = data.next_change_in;
 
@@ -135,13 +143,10 @@ async function refresh_sequence_state() {
       noise_content.classList.remove("fade_state");
     }, 120);
 
-    if (typed_text) {
-      set_state_text("typing");
-    } else {
-      set_state_text("awaiting_input");
-    }
+    set_response_text("");
+    set_state_text(typed_text ? "typing" : "awaiting_input");
   } catch (error) {
-    set_response_text("[ERROR] server connection failed", "error");
+    set_response_text(`[ERROR] ${error.message}`, "error");
     set_state_text("offline");
   }
 }
@@ -169,6 +174,10 @@ async function submit_sequence_gate() {
 
     const data = await response.json();
 
+    if (!response.ok) {
+      throw new Error(data.message || "Sequence validation failed");
+    }
+
     if (data.success) {
       set_response_text("[OK] gate accepted\n[REDIRECT] opening admin login", "success");
       set_state_text("accepted");
@@ -183,7 +192,7 @@ async function submit_sequence_gate() {
     set_response_text(data.message || "[DENIED] sequence rejected", "error");
     set_state_text("rejected");
   } catch (error) {
-    set_response_text("[ERROR] validation request failed", "error");
+    set_response_text(`[ERROR] ${error.message}`, "error");
     set_state_text("error");
   }
 }
