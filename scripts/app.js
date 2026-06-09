@@ -253,29 +253,24 @@ const renderPosts = (items = []) => {
     `).join('')
 }
 
-const renderResume = (items = []) => {
-  const resumes = normalizeResumes(items)
-  const current = resumes.find((resume) => resume.is_current) || resumes[0]
+const viewerWrap = getEl("resume_viewer_wrap");
 
-  const textEl = getEl('current_resume_text')
-  const linkEl = getEl('current_resume_link')
+if (current && current.file_url) {
+  textEl.textContent = current.title || "Current Resume";
+  linkEl.href = current.file_url;
+  linkEl.style.display = "inline-block";
 
-  if (!textEl || !linkEl) return
-
-  if (!current) {
-    textEl.textContent = 'No resume available yet.'
-    linkEl.style.display = 'none'
-    return
-  }
-
-  textEl.textContent = current.title || 'Current Resume'
-
-  if (current.file_url) {
-    linkEl.href = current.file_url
-    linkEl.style.display = 'inline-block'
-  } else {
-    linkEl.style.display = 'none'
-  }
+  viewerWrap.innerHTML = `
+    <iframe
+      src="${escapeHtml(current.file_url)}"
+      title="${escapeHtml(current.title || "Current Resume")}"
+      loading="lazy"
+    ></iframe>
+  `;
+} else {
+  textEl.textContent = "No resume available yet.";
+  linkEl.style.display = "none";
+  viewerWrap.innerHTML = "";
 }
 
 const renderWork = (items = []) => {
