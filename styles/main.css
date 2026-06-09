@@ -68,11 +68,11 @@ body {
   color: var(--text-main);
   line-height: 1.6;
 }
-
+/*
 body.loading {
   visibility: hidden;
 }
-
+*/
 a {
   text-decoration: none;
   color: inherit;
