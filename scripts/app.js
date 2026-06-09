@@ -253,34 +253,67 @@ const renderPosts = (items = []) => {
     `).join('')
 }
 
-const viewerWrap = getEl("resume_viewer_wrap");
+const renderResume = (items = []) => {
+  const resumes = normalizeResumes(items)
+  const current = resumes.find((resume) => resume.is_current) || resumes[0]
 
-if (current && current.file_url) {
-  textEl.textContent = current.title || "Current Resume";
-  linkEl.href = current.file_url;
-  linkEl.style.display = "inline-block";
+  const textEl = getEl('current_resume_text')
+  const linkEl = getEl('current_resume_link')
+  const viewerWrap = getEl('resume_viewer_wrap')
 
-  viewerWrap.innerHTML = `
-    <iframe
-      src="${escapeHtml(current.file_url)}"
-      title="${escapeHtml(current.title || "Current Resume")}"
-      loading="lazy"
-    ></iframe>
-  `;
-} else {
-  textEl.textContent = "No resume available yet.";
-  linkEl.style.display = "none";
-  viewerWrap.innerHTML = "";
+  if (!textEl || !linkEl) return
+
+  if (!current) {
+    textEl.textContent = 'No resume available yet.'
+    linkEl.style.display = 'none'
+
+    if (viewerWrap) {
+      viewerWrap.innerHTML = ''
+      viewerWrap.style.display = 'none'
+    }
+
+    return
+  }
+
+  textEl.textContent = current.title || 'Current Resume'
+
+  if (current.file_url) {
+    linkEl.href = current.file_url
+    linkEl.style.display = 'inline-block'
+
+    if (viewerWrap) {
+      const previewUrl = current.image_url || current.file_url
+
+      viewerWrap.style.display = 'block'
+      viewerWrap.innerHTML = `
+        <img
+          src="${escapeHtml(previewUrl)}"
+          alt="${escapeHtml(current.title || 'Current Resume')}"
+          class="resume_image"
+          loading="lazy"
+        />
+      `
+    }
+  } else {
+    linkEl.style.display = 'none'
+
+    if (viewerWrap) {
+      viewerWrap.innerHTML = ''
+      viewerWrap.style.display = 'none'
+    }
+  }
 }
 
 const renderWork = (items = []) => {
   const container = getEl('work_grid')
   if (!container) return
 
-  const visibleRoles = normalizeWork(items).filter((role) => role.is_visible).sort(compareWorkItems)
+  const visibleRoles = normalizeWork(items)
+    .filter((role) => role.is_visible)
+    .sort(compareWorkItems)
 
   if (!visibleRoles.length) {
-    container.innerHTML = `<p class='entries_empty'>Work experience coming soon.</p>`
+    container.innerHTML = `<p class='entries_empty'>Professional experience coming soon.</p>`
     return
   }
 
@@ -291,7 +324,9 @@ const renderWork = (items = []) => {
     return acc
   }, {})
 
-  const groupedEntries = Object.entries(grouped).sort((a, b) => compareWorkItems(a[1][0], b[1][0])).map(([organization, roles]) => createWorkCompanyCard(organization, roles))
+  const groupedEntries = Object.entries(grouped)
+    .sort((a, b) => compareWorkItems(a[1][0], b[1][0]))
+    .map(([organization, roles]) => createWorkCompanyCard(organization, roles))
 
   container.innerHTML = groupedEntries.join('')
 }

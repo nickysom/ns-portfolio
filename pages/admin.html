@@ -108,12 +108,15 @@
       .search_result_item:last-child {
         border-bottom: none;
       }
+
       .search_result_item:hover {
         background: var(--surface, #f8fafc);
       }
+
       .search_result_item strong {
         font-size: 14px;
       }
+
       .search_result_item span {
         font-size: 12px;
         opacity: 0.6;
@@ -144,6 +147,7 @@
         opacity: 1;
         transform: translateY(0);
       }
+
       #toast.error {
         background: #ef4444;
       }
@@ -151,6 +155,7 @@
       .dashboard_tab {
         display: none;
       }
+
       .dashboard_tab.active {
         display: block;
       }
@@ -162,7 +167,6 @@
         margin-bottom: 24px;
       }
 
-      /* Split layout — form hidden by default, shown when .form_open is added */
       .dashboard_split {
         display: grid;
         grid-template-columns: 1fr;
@@ -182,7 +186,6 @@
         display: grid;
       }
 
-      /* Projects / posts / resumes always show their form */
       .dashboard_split.always_split {
         grid-template-columns: 1fr 1fr;
       }
@@ -241,6 +244,7 @@
       }
     </style>
   </head>
+
   <body>
     <div id="toast"></div>
     <div id="search_results"></div>
@@ -298,6 +302,9 @@
           <button class="nav_tab" data-tab="awards_tab" type="button">
             Awards
           </button>
+          <button class="nav_tab" data-tab="photos_tab" type="button">
+            Photography
+          </button>
         </nav>
 
         <a class="view_site_link" href="index.html">View site</a>
@@ -331,30 +338,41 @@
             <h2>Overview</h2>
             <p>Manage your portfolio without editing HTML by hand.</p>
           </div>
+
           <div class="stats_grid">
             <div class="panel stat_card">
               <h3>Projects</h3>
               <p id="projects_count">0</p>
             </div>
+
             <div class="panel stat_card">
               <h3>Posts</h3>
               <p id="posts_count">0</p>
             </div>
+
             <div class="panel stat_card">
               <h3>Resumes</h3>
               <p id="resumes_count">0</p>
             </div>
+
             <div class="panel stat_card">
               <h3>Work</h3>
               <p id="work_count">0</p>
             </div>
+
             <div class="panel stat_card">
               <h3>Academia</h3>
               <p id="academia_count">0</p>
             </div>
+
             <div class="panel stat_card">
               <h3>Awards</h3>
               <p id="awards_count">0</p>
+            </div>
+
+            <div class="panel stat_card">
+              <h3>Photos</h3>
+              <p id="photos_count">0</p>
             </div>
           </div>
         </section>
@@ -365,41 +383,50 @@
             <h2>Site Content</h2>
             <p>Edit your homepage and contact content.</p>
           </div>
+
           <form id="site_form" class="panel form_panel">
             <div class="form_grid">
               <div class="form_group">
-                <label for="title_input">Title</label
-                ><input id="title_input" type="text" />
+                <label for="title_input">Title</label>
+                <input id="title_input" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="subtitle_input">Subtitle</label
-                ><input id="subtitle_input" type="text" />
+                <label for="subtitle_input">Subtitle</label>
+                <input id="subtitle_input" type="text" />
               </div>
+
               <div class="form_group full_width">
-                <label for="intro_input">Intro</label
-                ><textarea id="intro_input" rows="4"></textarea>
+                <label for="intro_input">Intro</label>
+                <textarea id="intro_input" rows="4"></textarea>
               </div>
+
               <div class="form_group full_width">
-                <label for="about_input">About</label
-                ><textarea id="about_input" rows="6"></textarea>
+                <label for="about_input">About</label>
+                <textarea id="about_input" rows="6"></textarea>
               </div>
+
               <div class="form_group">
-                <label for="email_input">Email</label
-                ><input id="email_input" type="text" />
+                <label for="email_input">Email</label>
+                <input id="email_input" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="linkedin_input">LinkedIn</label
-                ><input id="linkedin_input" type="text" />
+                <label for="linkedin_input">LinkedIn</label>
+                <input id="linkedin_input" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="github_input">GitHub</label
-                ><input id="github_input" type="text" />
+                <label for="github_input">GitHub</label>
+                <input id="github_input" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="instagram_input">Instagram</label
-                ><input id="instagram_input" type="text" />
+                <label for="instagram_input">Instagram</label>
+                <input id="instagram_input" type="text" />
               </div>
             </div>
+
             <div class="form_actions">
               <button type="submit">Save Site Content</button>
             </div>
@@ -412,63 +439,76 @@
             <h2>Projects</h2>
             <p>Add, edit, hide, or delete projects.</p>
           </div>
+
           <div class="dashboard_split always_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Projects</h3>
                 <button id="new_project_btn" type="button">New Project</button>
               </div>
+
               <div id="projects_list" class="item_list"></div>
             </div>
+
             <form id="project_form" class="panel form_panel">
               <input id="project_id" type="hidden" />
+
               <div class="form_group">
-                <label for="project_title">Title</label
-                ><input id="project_title" type="text" required />
+                <label for="project_title">Title</label>
+                <input id="project_title" type="text" required />
               </div>
+
               <div class="form_group">
-                <label for="project_slug">Slug</label
-                ><input
+                <label for="project_slug">Slug</label>
+                <input
                   id="project_slug"
                   type="text"
                   placeholder="nsportfolio_game"
                 />
               </div>
+
               <div class="form_group">
-                <label for="project_category">Category</label
-                ><input id="project_category" type="text" />
+                <label for="project_category">Category</label>
+                <input id="project_category" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="project_link">Link</label
-                ><input id="project_link" type="text" />
+                <label for="project_link">Link</label>
+                <input id="project_link" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="project_image_url">Image URL</label
-                ><input id="project_image_url" type="text" />
+                <label for="project_image_url">Image URL</label>
+                <input id="project_image_url" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="project_sort_order">Sort Order</label
-                ><input
+                <label for="project_sort_order">Sort Order</label>
+                <input
                   id="project_sort_order"
                   type="number"
                   value="1"
                   min="1"
                 />
               </div>
+
               <div class="form_group checkbox_group">
-                <label
-                  ><input id="project_is_visible" type="checkbox" checked />
-                  Visible</label
-                >
-                <label
-                  ><input id="project_is_featured" type="checkbox" />
-                  Featured</label
-                >
+                <label>
+                  <input id="project_is_visible" type="checkbox" checked />
+                  Visible
+                </label>
+
+                <label>
+                  <input id="project_is_featured" type="checkbox" />
+                  Featured
+                </label>
               </div>
+
               <div class="form_group full_width">
-                <label for="project_description">Description</label
-                ><textarea id="project_description" rows="5"></textarea>
+                <label for="project_description">Description</label>
+                <textarea id="project_description" rows="5"></textarea>
               </div>
+
               <div class="form_actions">
                 <button type="submit">Save Project</button>
                 <button
@@ -489,46 +529,57 @@
             <h2>Posts</h2>
             <p>Create and manage updates or blog posts.</p>
           </div>
+
           <div class="dashboard_split always_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Posts</h3>
                 <button id="new_post_btn" type="button">New Post</button>
               </div>
+
               <div id="posts_list" class="item_list"></div>
             </div>
+
             <form id="post_form" class="panel form_panel">
               <input id="post_id" type="hidden" />
+
               <div class="form_group">
-                <label for="post_title">Title</label
-                ><input id="post_title" type="text" required />
+                <label for="post_title">Title</label>
+                <input id="post_title" type="text" required />
               </div>
+
               <div class="form_group">
-                <label for="post_slug">Slug</label
-                ><input id="post_slug" type="text" placeholder="my_post" />
+                <label for="post_slug">Slug</label>
+                <input id="post_slug" type="text" placeholder="my_post" />
               </div>
+
               <div class="form_group">
-                <label for="post_cover_image_url">Cover Image URL</label
-                ><input id="post_cover_image_url" type="text" />
+                <label for="post_cover_image_url">Cover Image URL</label>
+                <input id="post_cover_image_url" type="text" />
               </div>
+
               <div class="form_group">
-                <label for="post_sort_order">Sort Order</label
-                ><input id="post_sort_order" type="number" value="1" min="1" />
+                <label for="post_sort_order">Sort Order</label>
+                <input id="post_sort_order" type="number" value="1" min="1" />
               </div>
+
               <div class="form_group checkbox_group">
-                <label
-                  ><input id="post_is_published" type="checkbox" checked />
-                  Published</label
-                >
+                <label>
+                  <input id="post_is_published" type="checkbox" checked />
+                  Published
+                </label>
               </div>
+
               <div class="form_group full_width">
-                <label for="post_excerpt">Excerpt</label
-                ><textarea id="post_excerpt" rows="3"></textarea>
+                <label for="post_excerpt">Excerpt</label>
+                <textarea id="post_excerpt" rows="3"></textarea>
               </div>
+
               <div class="form_group full_width">
-                <label for="post_content">Content</label
-                ><textarea id="post_content" rows="8"></textarea>
+                <label for="post_content">Content</label>
+                <textarea id="post_content" rows="8"></textarea>
               </div>
+
               <div class="form_actions">
                 <button type="submit">Save Post</button>
                 <button id="reset_post_btn" type="button" class="secondary_btn">
@@ -545,34 +596,42 @@
             <h2>Resumes</h2>
             <p>Store resume metadata and current resume links.</p>
           </div>
+
           <div class="dashboard_split always_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Resumes</h3>
                 <button id="new_resume_btn" type="button">New Resume</button>
               </div>
+
               <div id="resumes_list" class="item_list"></div>
             </div>
+
             <form id="resume_form" class="panel form_panel">
               <input id="resume_id" type="hidden" />
+
               <div class="form_group">
-                <label for="resume_title">Title</label
-                ><input id="resume_title" type="text" required />
+                <label for="resume_title">Title</label>
+                <input id="resume_title" type="text" required />
               </div>
+
               <div class="form_group">
-                <label for="resume_file_name">File Name</label
-                ><input id="resume_file_name" type="text" />
+                <label for="resume_file_name">File Name</label>
+                <input id="resume_file_name" type="text" />
               </div>
+
               <div class="form_group full_width">
-                <label for="resume_file_url">File URL</label
-                ><input id="resume_file_url" type="text" />
+                <label for="resume_file_url">File URL</label>
+                <input id="resume_file_url" type="text" />
               </div>
+
               <div class="form_group checkbox_group">
-                <label
-                  ><input id="resume_is_current" type="checkbox" /> Current
-                  Resume</label
-                >
+                <label>
+                  <input id="resume_is_current" type="checkbox" />
+                  Current Resume
+                </label>
               </div>
+
               <div class="form_actions">
                 <button type="submit">Save Resume</button>
                 <button
@@ -603,6 +662,7 @@
                 <h3>All Work Entries</h3>
                 <button id="new_work_btn" type="button">New Entry</button>
               </div>
+
               <div id="work_list" class="item_list"></div>
             </div>
 
@@ -653,14 +713,15 @@
               </div>
 
               <div class="form_group checkbox_group">
-                <label
-                  ><input id="work_is_current" type="checkbox" /> Current
-                  Role</label
-                >
-                <label
-                  ><input id="work_is_visible" type="checkbox" checked />
-                  Visible on site</label
-                >
+                <label>
+                  <input id="work_is_current" type="checkbox" />
+                  Current Role
+                </label>
+
+                <label>
+                  <input id="work_is_visible" type="checkbox" checked />
+                  Visible on site
+                </label>
               </div>
 
               <div class="form_group full_width">
@@ -684,72 +745,86 @@
             <h2>Academia</h2>
             <p>Add and manage your academic history entries.</p>
           </div>
+
           <div class="dashboard_split" id="academia_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Academia Entries</h3>
-                <button id="new_academia_btn" type="button">New Entry</button>
+                <button id="new_academia_btn" type="button">
+                  New Entry
+                </button>
               </div>
+
               <div id="academia_list" class="item_list"></div>
             </div>
+
             <form id="academia_form" class="panel form_panel entry_form_panel">
               <input id="academia_id" type="hidden" />
+
               <div class="form_group">
-                <label for="academia_title">Title</label
-                ><input
+                <label for="academia_title">Title</label>
+                <input
                   id="academia_title"
                   type="text"
                   required
                   placeholder="e.g. B.S. Computer Science"
                 />
               </div>
+
               <div class="form_group">
-                <label for="academia_subtitle">Subtitle / Role</label
-                ><input
+                <label for="academia_subtitle">Subtitle / Role</label>
+                <input
                   id="academia_subtitle"
                   type="text"
                   placeholder="e.g. Minor in Mathematics"
                 />
               </div>
+
               <div class="form_group">
-                <label for="academia_organization">Institution</label
-                ><input
+                <label for="academia_organization">Institution</label>
+                <input
                   id="academia_organization"
                   type="text"
                   placeholder="e.g. MIT"
                 />
               </div>
+
               <div class="form_group">
-                <label for="academia_date_range">Date / Year Range</label
-                ><input
+                <label for="academia_date_range">Date / Year Range</label>
+                <input
                   id="academia_date_range"
                   type="text"
                   placeholder="e.g. 2018 – 2022"
                 />
               </div>
+
               <div class="form_group">
-                <label for="academia_sort_order">Sort Order</label
-                ><input
+                <label for="academia_sort_order">Sort Order</label>
+                <input
                   id="academia_sort_order"
                   type="number"
                   value="1"
                   min="1"
                 />
               </div>
+
               <div class="form_group">
-                <label for="academia_link">Link</label
-                ><input id="academia_link" type="text" placeholder="https://" />
+                <label for="academia_link">Link</label>
+                <input id="academia_link" type="text" placeholder="https://" />
               </div>
+
               <div class="form_group full_width">
-                <label for="academia_description">Description</label
-                ><textarea id="academia_description" rows="5"></textarea>
+                <label for="academia_description">Description</label>
+                <textarea id="academia_description" rows="5"></textarea>
               </div>
+
               <div class="form_group checkbox_group">
-                <label
-                  ><input id="academia_is_visible" type="checkbox" checked />
-                  Visible on site</label
-                >
+                <label>
+                  <input id="academia_is_visible" type="checkbox" checked />
+                  Visible on site
+                </label>
               </div>
+
               <div class="form_actions">
                 <button type="submit">Save Entry</button>
                 <button
@@ -770,72 +845,84 @@
             <h2>Awards</h2>
             <p>Add and manage your awards and recognition entries.</p>
           </div>
+
           <div class="dashboard_split" id="awards_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Awards Entries</h3>
                 <button id="new_awards_btn" type="button">New Entry</button>
               </div>
+
               <div id="awards_list" class="item_list"></div>
             </div>
+
             <form id="awards_form" class="panel form_panel entry_form_panel">
               <input id="awards_id" type="hidden" />
+
               <div class="form_group">
-                <label for="awards_title">Title</label
-                ><input
+                <label for="awards_title">Title</label>
+                <input
                   id="awards_title"
                   type="text"
                   required
                   placeholder="e.g. Best Paper Award"
                 />
               </div>
+
               <div class="form_group">
-                <label for="awards_subtitle">Subtitle / Role</label
-                ><input
+                <label for="awards_subtitle">Subtitle / Role</label>
+                <input
                   id="awards_subtitle"
                   type="text"
                   placeholder="e.g. First Place"
                 />
               </div>
+
               <div class="form_group">
-                <label for="awards_organization">Organization</label
-                ><input
+                <label for="awards_organization">Organization</label>
+                <input
                   id="awards_organization"
                   type="text"
                   placeholder="e.g. IEEE"
                 />
               </div>
+
               <div class="form_group">
-                <label for="awards_date_range">Date / Year</label
-                ><input
+                <label for="awards_date_range">Date / Year</label>
+                <input
                   id="awards_date_range"
                   type="text"
                   placeholder="e.g. 2023"
                 />
               </div>
+
               <div class="form_group">
-                <label for="awards_sort_order">Sort Order</label
-                ><input
+                <label for="awards_sort_order">Sort Order</label>
+                <input
                   id="awards_sort_order"
                   type="number"
                   value="1"
                   min="1"
                 />
               </div>
+
               <div class="form_group">
-                <label for="awards_link">Link</label
-                ><input id="awards_link" type="text" placeholder="https://" />
+                <label for="awards_link">Link</label>
+                <input id="awards_link" type="text" placeholder="https://" />
               </div>
+
               <div class="form_group full_width">
-                <label for="awards_description">Description</label
-                ><textarea id="awards_description" rows="5"></textarea>
+                <label for="awards_description">Description</label>
+                <textarea id="awards_description" rows="5"></textarea>
               </div>
+
               <div class="form_group checkbox_group">
-                <label
-                  ><input id="awards_is_visible" type="checkbox" checked />
-                  Visible on site</label
-                >
+                <label>
+                  <input id="awards_is_visible" type="checkbox" checked />
+                  Visible on site
+                </label>
               </div>
+
               <div class="form_actions">
                 <button type="submit">Save Entry</button>
                 <button
@@ -844,6 +931,90 @@
                   class="secondary_btn"
                 >
                   Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <!-- PHOTOGRAPHY -->
+        <section class="dashboard_tab" id="photos_tab">
+          <div class="page_header">
+            <h2>Photography</h2>
+            <p>Upload and manage photos displayed on your public portfolio.</p>
+          </div>
+
+          <div class="dashboard_split always_split">
+            <div class="panel list_panel">
+              <div class="list_header">
+                <h3>All Photos</h3>
+                <button id="new_photo_btn" type="button">New Photo</button>
+              </div>
+
+              <div id="photos_list" class="item_list"></div>
+            </div>
+
+            <form id="photo_form" class="panel form_panel">
+              <input id="photo_id" type="hidden" />
+
+              <div class="form_group">
+                <label for="photo_title">Title</label>
+                <input
+                  id="photo_title"
+                  type="text"
+                  required
+                  placeholder="e.g. City Lights"
+                />
+              </div>
+
+              <div class="form_group">
+                <label for="photo_caption">Caption</label>
+                <input
+                  id="photo_caption"
+                  type="text"
+                  placeholder="Short description"
+                />
+              </div>
+
+              <div class="form_group full_width">
+                <label for="photo_file">Upload Photo</label>
+                <input id="photo_file" type="file" accept="image/*" />
+              </div>
+
+              <div class="form_group full_width">
+                <label for="photo_image_url">Image URL</label>
+                <input
+                  id="photo_image_url"
+                  type="text"
+                  placeholder="Will be filled after S3 upload"
+                />
+              </div>
+
+              <div class="form_group">
+                <label for="photo_sort_order">Sort Order</label>
+                <input
+                  id="photo_sort_order"
+                  type="number"
+                  value="1"
+                  min="1"
+                />
+              </div>
+
+              <div class="form_group checkbox_group">
+                <label>
+                  <input id="photo_is_visible" type="checkbox" checked />
+                  Visible on site
+                </label>
+              </div>
+
+              <div class="form_actions">
+                <button type="submit">Save Photo</button>
+                <button
+                  id="reset_photo_btn"
+                  type="button"
+                  class="secondary_btn"
+                >
+                  Clear
                 </button>
               </div>
             </form>

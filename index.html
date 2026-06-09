@@ -118,8 +118,13 @@
             <p class="section_label">About</p>
             <h2>About Me</h2>
           </div>
-          <div class="text_card">
+
+          <div
+            class="text_card about_bubble"
+            style="position: relative; overflow: visible; margin-bottom: 100px"
+          >
             <p id="about">Loading about section...</p>
+            <span class="about_tail"></span>
           </div>
         </div>
       </section>
@@ -289,6 +294,45 @@
         <p class="footer_copy">© 2026 Nicky. All rights reserved.</p>
       </div>
     </footer>
+
+    <div class="scroll_controls" aria-label="Page scroll controls">
+      <button
+        id="scroll_bottom_btn"
+        class="scroll_btn"
+        type="button"
+        aria-label="Scroll to bottom"
+      >
+        <span>↓</span>
+      </button>
+
+      <button
+        id="scroll_top_btn"
+        class="scroll_btn"
+        type="button"
+        aria-label="Scroll to top"
+      >
+        <span>↑</span>
+      </button>
+    </div>
+
+    <script>
+      const scrollTopBtn = document.getElementById("scroll_top_btn");
+      const scrollBottomBtn = document.getElementById("scroll_bottom_btn");
+
+      scrollTopBtn.addEventListener("click", () => {
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth",
+        });
+      });
+
+      scrollBottomBtn.addEventListener("click", () => {
+        window.scrollTo({
+          top: document.body.scrollHeight,
+          behavior: "smooth",
+        });
+      });
+    </script>
 
     <script>
       const menuToggle = document.querySelector(".menu_toggle");
