@@ -1,5 +1,6 @@
 const API_BASE = "https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod";
-const COGNITO_DOMAIN = "https://us-east-2jfof4gtel.auth.us-east-2.amazoncognito.com";
+const COGNITO_DOMAIN =
+  "https://us-east-2jfof4gtel.auth.us-east-2.amazoncognito.com";
 const CLIENT_ID = "5iaear77vsftb0fupep3mics45";
 const REDIRECT_URI = "https://nsportfolio.net/admin.html";
 const ALLOWED_ADMIN_EMAIL = "nickysom@icloud.com";
@@ -13,7 +14,7 @@ const WARNING_MS = 2 * 60 * 1000;
 
 let warning_timer = null;
 
-// ── DOM refs ──────────────────────────────────────────────────────────────────
+// DOM refs
 
 const auth_status = document.getElementById("auth_status");
 const login_btn = document.getElementById("login_btn");
@@ -46,6 +47,7 @@ const resumes_count = document.getElementById("resumes_count");
 const work_count = document.getElementById("work_count");
 const academia_count = document.getElementById("academia_count");
 const awards_count = document.getElementById("awards_count");
+const photos_count = document.getElementById("photos_count");
 
 const projects_list = document.getElementById("projects_list");
 const posts_list = document.getElementById("posts_list");
@@ -53,6 +55,7 @@ const resumes_list = document.getElementById("resumes_list");
 const work_list = document.getElementById("work_list");
 const academia_list = document.getElementById("academia_list");
 const awards_list = document.getElementById("awards_list");
+const photos_list = document.getElementById("photos_list");
 
 const new_project_btn = document.getElementById("new_project_btn");
 const new_post_btn = document.getElementById("new_post_btn");
@@ -60,6 +63,7 @@ const new_resume_btn = document.getElementById("new_resume_btn");
 const new_work_btn = document.getElementById("new_work_btn");
 const new_academia_btn = document.getElementById("new_academia_btn");
 const new_awards_btn = document.getElementById("new_awards_btn");
+const new_photo_btn = document.getElementById("new_photo_btn");
 
 const project_form = document.getElementById("project_form");
 const project_fields = {
@@ -99,7 +103,6 @@ const resume_fields = {
 };
 const reset_resume_btn = document.getElementById("reset_resume_btn");
 
-// Updated Work fields
 const work_form = document.getElementById("work_form");
 const work_fields = {
   id: document.getElementById("work_id"),
@@ -143,12 +146,23 @@ const awards_fields = {
 };
 const reset_awards_btn = document.getElementById("reset_awards_btn");
 
-// Split panel elements for form show/hide
+const photo_form = document.getElementById("photo_form");
+const photo_fields = {
+  id: document.getElementById("photo_id"),
+  title: document.getElementById("photo_title"),
+  caption: document.getElementById("photo_caption"),
+  file: document.getElementById("photo_file"),
+  image_url: document.getElementById("photo_image_url"),
+  sort_order: document.getElementById("photo_sort_order"),
+  is_visible: document.getElementById("photo_is_visible"),
+};
+const reset_photo_btn = document.getElementById("reset_photo_btn");
+
 const work_split = document.getElementById("work_split");
 const academia_split = document.getElementById("academia_split");
 const awards_split = document.getElementById("awards_split");
 
-// ── State ─────────────────────────────────────────────────────────────────────
+// State
 
 let projects_cache = [];
 let posts_cache = [];
@@ -156,33 +170,46 @@ let resumes_cache = [];
 let work_cache = [];
 let academia_cache = [];
 let awards_cache = [];
+let photos_cache = [];
 let logout_timer = null;
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
+// Toast
 
 let toast_timeout = null;
+
 const show_toast = (text, is_error = false) => {
   toast_el.textContent = text;
   toast_el.className = "show" + (is_error ? " error" : "");
+
   if (toast_timeout) clearTimeout(toast_timeout);
+
   toast_timeout = setTimeout(() => {
     toast_el.className = "";
   }, 3000);
 };
 
-// ── Form panel show/hide ──────────────────────────────────────────────────────
+// Form panel show/hide
 
 const open_form = (split_el) => split_el.classList.add("form_open");
 const close_form = (split_el) => split_el.classList.remove("form_open");
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// Helpers
 
 const slugify = (value) =>
-  value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
 
 const switch_tab = (tab_id) => {
-  nav_tabs.forEach((b) => b.classList.toggle("active", b.dataset.tab === tab_id));
-  dashboard_tabs.forEach((s) => s.classList.toggle("active", s.id === tab_id));
+  nav_tabs.forEach((button) => {
+    button.classList.toggle("active", button.dataset.tab === tab_id);
+  });
+
+  dashboard_tabs.forEach((section) => {
+    section.classList.toggle("active", section.id === tab_id);
+  });
 };
 
 nav_tabs.forEach((button) => {
@@ -191,18 +218,26 @@ nav_tabs.forEach((button) => {
 
 const format_month_label = (value) => {
   if (!value) return "";
+
   const [year, month] = String(value).split("-");
   if (!year || !month) return value;
+
   const date = new Date(Number(year), Number(month) - 1, 1);
-  return date.toLocaleString("en-US", { month: "short", year: "numeric" });
+
+  return date.toLocaleString("en-US", {
+    month: "short",
+    year: "numeric",
+  });
 };
 
 const format_work_date_range = (item) => {
   const start = format_month_label(item.start_date);
   const end = item.is_current ? "Present" : format_month_label(item.end_date);
+
   if (start && end) return `${start} – ${end}`;
   if (start) return start;
   if (end) return end;
+
   return "";
 };
 
@@ -210,10 +245,11 @@ const sort_work_items = (items = []) =>
   [...items].sort((a, b) => {
     if (a.is_current && !b.is_current) return -1;
     if (!a.is_current && b.is_current) return 1;
+
     return String(b.start_date || "").localeCompare(String(a.start_date || ""));
   });
 
-// ── Auth views ────────────────────────────────────────────────────────────────
+// Auth views
 
 const set_logged_out_view = () => {
   auth_status.textContent = "Not signed in";
@@ -233,17 +269,19 @@ const set_logged_in_view = (email = "") => {
   dashboard_shell.style.display = "grid";
 };
 
-// ── Session ───────────────────────────────────────────────────────────────────
+// Session
 
 const clear_local_session = () => {
   sessionStorage.removeItem(SESSION_TOKEN_KEY);
   sessionStorage.removeItem(SESSION_EMAIL_KEY);
   sessionStorage.removeItem(SESSION_TIMER_KEY);
   sessionStorage.removeItem(PKCE_VERIFIER_KEY);
+
   if (logout_timer) {
     clearTimeout(logout_timer);
     logout_timer = null;
   }
+
   if (warning_timer) {
     clearTimeout(warning_timer);
     warning_timer = null;
@@ -254,12 +292,14 @@ const parseJwt = (token) => {
   try {
     const payload = token.split(".")[1];
     const base64 = payload.replace(/-/g, "+").replace(/_/g, "/");
+
     const json = decodeURIComponent(
       atob(base64)
         .split("")
         .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
         .join("")
     );
+
     return JSON.parse(json);
   } catch {
     return null;
@@ -267,13 +307,18 @@ const parseJwt = (token) => {
 };
 
 const buildLogoutUrl = () =>
-  `${COGNITO_DOMAIN}/logout?client_id=${encodeURIComponent(CLIENT_ID)}&logout_uri=${encodeURIComponent(REDIRECT_URI)}`;
+  `${COGNITO_DOMAIN}/logout?client_id=${encodeURIComponent(
+    CLIENT_ID
+  )}&logout_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
 const end_session = (message = "Signed out", redirectToCognito = false) => {
   clear_local_session();
   set_logged_out_view();
   show_toast(message);
-  if (redirectToCognito) window.location.href = buildLogoutUrl();
+
+  if (redirectToCognito) {
+    window.location.href = buildLogoutUrl();
+  }
 };
 
 const extend_session = () => {
@@ -296,9 +341,13 @@ const schedule_auto_logout = () => {
   }
 
   const warning_time = remaining - WARNING_MS;
+
   if (warning_time > 0) {
     warning_timer = setTimeout(() => {
-      const stay = window.confirm("Your session will expire in 2 minutes. Press OK to stay signed in.");
+      const stay = window.confirm(
+        "Your session will expire in 2 minutes. Press OK to stay signed in."
+      );
+
       if (stay) {
         extend_session();
       } else {
@@ -307,14 +356,19 @@ const schedule_auto_logout = () => {
     }, warning_time);
   }
 
-  logout_timer = setTimeout(() => end_session("Session expired", true), remaining);
+  logout_timer = setTimeout(
+    () => end_session("Session expired", true),
+    remaining
+  );
 };
 
 const start_session = (token, email) => {
   const expires_at = Date.now() + SESSION_MS;
+
   sessionStorage.setItem(SESSION_TOKEN_KEY, token);
   sessionStorage.setItem(SESSION_EMAIL_KEY, email);
   sessionStorage.setItem(SESSION_TIMER_KEY, String(expires_at));
+
   set_logged_in_view(email);
   schedule_auto_logout();
 };
@@ -323,31 +377,40 @@ const has_valid_session = () => {
   const token = sessionStorage.getItem(SESSION_TOKEN_KEY);
   const email = sessionStorage.getItem(SESSION_EMAIL_KEY);
   const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0);
+
   if (!token || !email || expires_at <= Date.now()) return false;
   if (email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) return false;
+
   return true;
 };
 
-// ── PKCE ──────────────────────────────────────────────────────────────────────
+// PKCE
 
 const randomString = (length = 96) => {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~";
   const array = new Uint8Array(length);
+
   crypto.getRandomValues(array);
+
   return Array.from(array, (x) => chars[x % chars.length]).join("");
 };
 
-const sha256 = async (plain) => crypto.subtle.digest("SHA-256", new TextEncoder().encode(plain));
+const sha256 = async (plain) =>
+  crypto.subtle.digest("SHA-256", new TextEncoder().encode(plain));
 
 const base64UrlEncode = (buf) => {
   let s = "";
+
   new Uint8Array(buf).forEach((b) => {
     s += String.fromCharCode(b);
   });
+
   return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 };
 
-const createCodeChallenge = async (verifier) => base64UrlEncode(await sha256(verifier));
+const createCodeChallenge = async (verifier) =>
+  base64UrlEncode(await sha256(verifier));
 
 const exchangeCodeForTokens = async (code, verifier) => {
   const body = new URLSearchParams({
@@ -360,7 +423,9 @@ const exchangeCodeForTokens = async (code, verifier) => {
 
   const response = await fetch(`${COGNITO_DOMAIN}/oauth2/token`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
     body: body.toString(),
   });
 
@@ -382,9 +447,11 @@ const handle_cognito_redirect = async () => {
     show_toast(error_description || error, true);
     return false;
   }
+
   if (!code) return false;
 
   const verifier = sessionStorage.getItem(PKCE_VERIFIER_KEY);
+
   if (!verifier) {
     show_toast("Missing login verifier. Please try signing in again.", true);
     return false;
@@ -402,6 +469,7 @@ const handle_cognito_redirect = async () => {
       show_toast("Missing email in token", true);
       return false;
     }
+
     if (email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) {
       show_toast(`Wrong account: ${email}`, true);
       return false;
@@ -409,6 +477,7 @@ const handle_cognito_redirect = async () => {
 
     start_session(id_token, email);
     sessionStorage.removeItem(PKCE_VERIFIER_KEY);
+
     return true;
   } catch (err) {
     console.error("token exchange failed:", err);
@@ -417,24 +486,32 @@ const handle_cognito_redirect = async () => {
   }
 };
 
-// ── API ───────────────────────────────────────────────────────────────────────
+// API
 
 const api_get = async (id) => {
   const response = await fetch(`${API_BASE}/content/${id}`);
-  if (!response.ok) throw new Error(`Failed to load ${id}`);
+
+  if (!response.ok) {
+    throw new Error(`Failed to load ${id}`);
+  }
+
   return response.json();
 };
 
 const api_put = async (id, payload) => {
   const response = await fetch(`${API_BASE}/content/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify(payload),
   });
+
   if (!response.ok) {
     const text = await response.text();
     throw new Error(text || `Failed to save ${id}`);
   }
+
   return response.json();
 };
 
@@ -442,11 +519,13 @@ const safe_get = async (id) => {
   try {
     return await api_get(id);
   } catch {
-    return { items: [] };
+    return {
+      items: [],
+    };
   }
 };
 
-// ── Normalizers ───────────────────────────────────────────────────────────────
+// Normalizers
 
 const normalize_projects = (items = []) =>
   items.map((item, i) => ({
@@ -483,7 +562,6 @@ const normalize_resumes = (items = []) =>
     is_current: !!item.is_current,
   }));
 
-// Updated Work normalizer
 const normalize_work = (items = []) =>
   items.map((item) => ({
     id: item.work_id || "",
@@ -511,9 +589,21 @@ const normalize_entries = (items = [], id_key) =>
     is_visible: item.is_visible !== false,
   }));
 
-// ── Render ────────────────────────────────────────────────────────────────────
+const normalize_photos = (items = []) =>
+  items.map((item, i) => ({
+    id: item.photo_id || "",
+    title: item.title || "",
+    caption: item.caption || "",
+    image_url: item.image_url || "",
+    sort_order: Number(item.sort_order ?? i + 1),
+    is_visible: item.is_visible !== false,
+  }));
+
+// Render
 
 const render_list = (container, items, type) => {
+  if (!container) return;
+
   if (!items.length) {
     container.innerHTML = `<div class='item_card'><p>No ${type} yet.</p></div>`;
     return;
@@ -521,7 +611,9 @@ const render_list = (container, items, type) => {
 
   container.innerHTML = items
     .map((item) => {
-      const is_entry_type = ["work", "academia", "awards"].includes(type);
+      const is_entry_type = ["work", "academia", "awards", "photos"].includes(
+        type
+      );
 
       const status_text =
         type === "projects"
@@ -538,40 +630,54 @@ const render_list = (container, items, type) => {
                 : "Archived"
               : type === "work"
                 ? format_work_date_range(item)
-                : item.date_range || "";
+                : type === "photos"
+                  ? item.is_visible
+                    ? "Visible"
+                    : "Hidden"
+                  : item.date_range || "";
 
       const sort_badge =
-        type === "projects" || type === "posts" || type === "academia" || type === "awards"
+        type === "projects" ||
+        type === "posts" ||
+        type === "academia" ||
+        type === "awards" ||
+        type === "photos"
           ? `<span class='item_sort_badge'>#${item.sort_order}</span>`
           : "";
 
       const visibility_badge =
-        is_entry_type && !item.is_visible ? `<span class='item_hidden_badge'>Hidden</span>` : "";
+        is_entry_type && !item.is_visible
+          ? `<span class='item_hidden_badge'>Hidden</span>`
+          : "";
 
       const extra_badge =
         type === "work" && item.subtitle
           ? `<span class='item_category_badge'>${item.subtitle}</span>`
           : "";
 
-      const subtitle_line = item.organization
-        ? `<p style="font-size:12px;color:var(--text-muted)">${item.organization}</p>`
-        : "";
+      const subtitle_line =
+        item.organization || item.caption
+          ? `<p style="font-size:12px;color:var(--text-muted)">${
+              item.organization || item.caption
+            }</p>`
+          : "";
 
       return `
-      <div class='item_card'>
-        <div class='item_card_top'>
-          <div>
-            <h4>${item.title || "Untitled"}${extra_badge}${visibility_badge}</h4>
-            ${subtitle_line}
-            <p>${status_text} ${sort_badge}</p>
-          </div>
-          <div class='item_actions'>
-            <button type='button' data-action='edit' data-type='${type}' data-id='${item.id}'>Edit</button>
-            <button type='button' data-action='delete' data-type='${type}' data-id='${item.id}'>Delete</button>
+        <div class='item_card'>
+          <div class='item_card_top'>
+            <div>
+              <h4>${item.title || "Untitled"}${extra_badge}${visibility_badge}</h4>
+              ${subtitle_line}
+              <p>${status_text} ${sort_badge}</p>
+            </div>
+
+            <div class='item_actions'>
+              <button type='button' data-action='edit' data-type='${type}' data-id='${item.id}'>Edit</button>
+              <button type='button' data-action='delete' data-type='${type}' data-id='${item.id}'>Delete</button>
+            </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
     })
     .join("");
 };
@@ -583,9 +689,10 @@ const update_counts = () => {
   work_count.textContent = String(work_cache.length);
   academia_count.textContent = String(academia_cache.length);
   awards_count.textContent = String(awards_cache.length);
+  photos_count.textContent = String(photos_cache.length);
 };
 
-// ── Clear forms ───────────────────────────────────────────────────────────────
+// Clear forms
 
 const clear_project_form = () => {
   project_fields.id.value = "";
@@ -637,17 +744,34 @@ const clear_work_form = () => {
 const clear_entry_form = (fields, cache, split_el) => {
   fields.id.value = "";
   fields.title.value = "";
-  if (fields.subtitle) fields.subtitle.value = "";
+
+  if (fields.subtitle) {
+    fields.subtitle.value = "";
+  }
+
   fields.organization.value = "";
   fields.date_range.value = "";
   fields.description.value = "";
   fields.link.value = "";
   fields.sort_order.value = cache.length + 1;
   fields.is_visible.checked = true;
-  if (split_el) close_form(split_el);
+
+  if (split_el) {
+    close_form(split_el);
+  }
 };
 
-// ── Fill forms ────────────────────────────────────────────────────────────────
+const clear_photo_form = () => {
+  photo_fields.id.value = "";
+  photo_fields.title.value = "";
+  photo_fields.caption.value = "";
+  photo_fields.file.value = "";
+  photo_fields.image_url.value = "";
+  photo_fields.sort_order.value = photos_cache.length + 1;
+  photo_fields.is_visible.checked = true;
+};
+
+// Fill forms
 
 const fill_project_form = (item) => {
   project_fields.id.value = item.id;
@@ -697,6 +821,7 @@ const fill_work_form = (item) => {
   work_fields.description.value = item.description || "";
 
   work_fields.end_date.disabled = !!item.is_current;
+
   if (item.is_current) {
     work_fields.end_date.value = "";
   }
@@ -708,18 +833,35 @@ const fill_work_form = (item) => {
 const fill_entry_form = (fields, item, tab_id, split_el) => {
   fields.id.value = item.id;
   fields.title.value = item.title || "";
-  if (fields.subtitle) fields.subtitle.value = item.subtitle || "";
+
+  if (fields.subtitle) {
+    fields.subtitle.value = item.subtitle || "";
+  }
+
   fields.organization.value = item.organization || "";
   fields.date_range.value = item.date_range || "";
   fields.description.value = item.description || "";
   fields.link.value = item.link || "";
   fields.sort_order.value = item.sort_order ?? 1;
   fields.is_visible.checked = item.is_visible !== false;
+
   switch_tab(tab_id);
   open_form(split_el);
 };
 
-// ── API save helpers ──────────────────────────────────────────────────────────
+const fill_photo_form = (item) => {
+  photo_fields.id.value = item.id;
+  photo_fields.title.value = item.title || "";
+  photo_fields.caption.value = item.caption || "";
+  photo_fields.image_url.value = item.image_url || "";
+  photo_fields.sort_order.value = item.sort_order ?? 1;
+  photo_fields.is_visible.checked = item.is_visible !== false;
+  photo_fields.file.value = "";
+
+  switch_tab("photos_tab");
+};
+
+// API save helpers
 
 const save_projects = () =>
   api_put("projects", {
@@ -804,10 +946,26 @@ const save_entries = (section_key, cache, id_key) =>
       })),
   });
 
-// ── Load data ─────────────────────────────────────────────────────────────────
+const save_photos = () =>
+  api_put("photos", {
+    id: "photos",
+    items: [...photos_cache]
+      .sort((a, b) => a.sort_order - b.sort_order)
+      .map((photo) => ({
+        photo_id: photo.id,
+        title: photo.title,
+        caption: photo.caption,
+        image_url: photo.image_url,
+        sort_order: photo.sort_order,
+        is_visible: photo.is_visible,
+      })),
+  });
+
+// Load data
 
 const load_site_content = async () => {
   const data = await api_get("site");
+
   Object.keys(site_fields).forEach((key) => {
     site_fields[key].value = data[key] || "";
   });
@@ -816,22 +974,48 @@ const load_site_content = async () => {
 const load_dashboard_data = async () => {
   await load_site_content();
 
-  const [projects_data, posts_data, resumes_data, work_data, academia_data, awards_data] =
-    await Promise.all([
-      safe_get("projects"),
-      safe_get("posts"),
-      safe_get("resumes"),
-      safe_get("work"),
-      safe_get("academia"),
-      safe_get("awards"),
-    ]);
+  const [
+    projects_data,
+    posts_data,
+    resumes_data,
+    work_data,
+    academia_data,
+    awards_data,
+    photos_data,
+  ] = await Promise.all([
+    safe_get("projects"),
+    safe_get("posts"),
+    safe_get("resumes"),
+    safe_get("work"),
+    safe_get("academia"),
+    safe_get("awards"),
+    safe_get("photos"),
+  ]);
 
-  projects_cache = normalize_projects(projects_data.items || []).sort((a, b) => a.sort_order - b.sort_order);
-  posts_cache = normalize_posts(posts_data.items || []).sort((a, b) => a.sort_order - b.sort_order);
+  projects_cache = normalize_projects(projects_data.items || []).sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+
+  posts_cache = normalize_posts(posts_data.items || []).sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+
   resumes_cache = normalize_resumes(resumes_data.items || []);
+
   work_cache = sort_work_items(normalize_work(work_data.items || []));
-  academia_cache = normalize_entries(academia_data.items || [], "academia_id").sort((a, b) => a.sort_order - b.sort_order);
-  awards_cache = normalize_entries(awards_data.items || [], "awards_id").sort((a, b) => a.sort_order - b.sort_order);
+
+  academia_cache = normalize_entries(
+    academia_data.items || [],
+    "academia_id"
+  ).sort((a, b) => a.sort_order - b.sort_order);
+
+  awards_cache = normalize_entries(awards_data.items || [], "awards_id").sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
+
+  photos_cache = normalize_photos(photos_data.items || []).sort(
+    (a, b) => a.sort_order - b.sort_order
+  );
 
   render_list(projects_list, projects_cache, "projects");
   render_list(posts_list, posts_cache, "posts");
@@ -839,13 +1023,16 @@ const load_dashboard_data = async () => {
   render_list(work_list, work_cache, "work");
   render_list(academia_list, academia_cache, "academia");
   render_list(awards_list, awards_cache, "awards");
+  render_list(photos_list, photos_cache, "photos");
+
   update_counts();
 };
 
-// ── Form submissions ──────────────────────────────────────────────────────────
+// Form submissions
 
 site_form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
   try {
     await api_put("site", {
       id: "site",
@@ -858,6 +1045,7 @@ site_form.addEventListener("submit", async (event) => {
       github: site_fields.github.value.trim(),
       instagram: site_fields.instagram.value.trim(),
     });
+
     show_toast("Site content saved ✓");
     await load_dashboard_data();
   } catch (err) {
@@ -868,7 +1056,9 @@ site_form.addEventListener("submit", async (event) => {
 
 project_form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
   const id = project_fields.id.value || `project_${Date.now()}`;
+
   const item = {
     id,
     title: project_fields.title.value.trim(),
@@ -881,12 +1071,18 @@ project_form.addEventListener("submit", async (event) => {
     is_featured: project_fields.is_featured.checked,
     sort_order: Number(project_fields.sort_order.value || 1),
   };
+
   const existing_index = projects_cache.findIndex((e) => e.id === id);
+
   if (existing_index >= 0) {
-    projects_cache[existing_index] = { ...projects_cache[existing_index], ...item };
+    projects_cache[existing_index] = {
+      ...projects_cache[existing_index],
+      ...item,
+    };
   } else {
     projects_cache.push(item);
   }
+
   try {
     await save_projects();
     clear_project_form();
@@ -900,7 +1096,9 @@ project_form.addEventListener("submit", async (event) => {
 
 post_form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
   const id = post_fields.id.value || `post_${Date.now()}`;
+
   const item = {
     id,
     title: post_fields.title.value.trim(),
@@ -911,12 +1109,18 @@ post_form.addEventListener("submit", async (event) => {
     is_published: post_fields.is_published.checked,
     sort_order: Number(post_fields.sort_order.value || 1),
   };
+
   const existing_index = posts_cache.findIndex((e) => e.id === id);
+
   if (existing_index >= 0) {
-    posts_cache[existing_index] = { ...posts_cache[existing_index], ...item };
+    posts_cache[existing_index] = {
+      ...posts_cache[existing_index],
+      ...item,
+    };
   } else {
     posts_cache.push(item);
   }
+
   try {
     await save_posts();
     clear_post_form();
@@ -930,10 +1134,16 @@ post_form.addEventListener("submit", async (event) => {
 
 resume_form.addEventListener("submit", async (event) => {
   event.preventDefault();
+
   const id = resume_fields.id.value || `resume_${Date.now()}`;
+
   if (resume_fields.is_current.checked) {
-    resumes_cache = resumes_cache.map((item) => ({ ...item, is_current: false }));
+    resumes_cache = resumes_cache.map((item) => ({
+      ...item,
+      is_current: false,
+    }));
   }
+
   const item = {
     id,
     title: resume_fields.title.value.trim(),
@@ -941,12 +1151,15 @@ resume_form.addEventListener("submit", async (event) => {
     file_url: resume_fields.file_url.value.trim(),
     is_current: resume_fields.is_current.checked,
   };
+
   const existing_index = resumes_cache.findIndex((e) => e.id === id);
+
   if (existing_index >= 0) {
     resumes_cache[existing_index] = item;
   } else {
     resumes_cache.push(item);
   }
+
   try {
     await save_resumes();
     clear_resume_form();
@@ -977,6 +1190,7 @@ work_form.addEventListener("submit", async (event) => {
   };
 
   const existing_index = work_cache.findIndex((e) => e.id === id);
+
   if (existing_index >= 0) {
     work_cache[existing_index] = item;
   } else {
@@ -986,7 +1200,9 @@ work_form.addEventListener("submit", async (event) => {
   try {
     await save_work();
     clear_work_form();
-    show_toast(existing_index >= 0 ? "Work entry updated ✓" : "Work entry created ✓");
+    show_toast(
+      existing_index >= 0 ? "Work entry updated ✓" : "Work entry created ✓"
+    );
     await load_dashboard_data();
   } catch (err) {
     console.error(err);
@@ -994,9 +1210,18 @@ work_form.addEventListener("submit", async (event) => {
   }
 });
 
-const handle_entry_submit = async (event, fields, cache_ref, section_key, id_key, split_el) => {
+const handle_entry_submit = async (
+  event,
+  fields,
+  cache_ref,
+  section_key,
+  id_key,
+  split_el
+) => {
   event.preventDefault();
+
   const id = fields.id.value || `${section_key}_${Date.now()}`;
+
   const item = {
     id,
     title: fields.title.value.trim(),
@@ -1008,16 +1233,23 @@ const handle_entry_submit = async (event, fields, cache_ref, section_key, id_key
     sort_order: Number(fields.sort_order.value || 1),
     is_visible: fields.is_visible.checked,
   };
+
   const existing_index = cache_ref.findIndex((e) => e.id === id);
+
   if (existing_index >= 0) {
     cache_ref[existing_index] = item;
   } else {
     cache_ref.push(item);
   }
+
   try {
     await save_entries(section_key, cache_ref, id_key);
     clear_entry_form(fields, cache_ref, split_el);
-    show_toast(existing_index >= 0 ? `${section_key} entry updated ✓` : `${section_key} entry created ✓`);
+    show_toast(
+      existing_index >= 0
+        ? `${section_key} entry updated ✓`
+        : `${section_key} entry created ✓`
+    );
     await load_dashboard_data();
   } catch (err) {
     console.error(err);
@@ -1025,18 +1257,67 @@ const handle_entry_submit = async (event, fields, cache_ref, section_key, id_key
   }
 };
 
-academia_form.addEventListener("submit", (e) =>
-  handle_entry_submit(e, academia_fields, academia_cache, "academia", "academia_id", academia_split)
-);
-awards_form.addEventListener("submit", (e) =>
-  handle_entry_submit(e, awards_fields, awards_cache, "awards", "awards_id", awards_split)
+academia_form.addEventListener("submit", (event) =>
+  handle_entry_submit(
+    event,
+    academia_fields,
+    academia_cache,
+    "academia",
+    "academia_id",
+    academia_split
+  )
 );
 
-// ── New / reset buttons ───────────────────────────────────────────────────────
+awards_form.addEventListener("submit", (event) =>
+  handle_entry_submit(
+    event,
+    awards_fields,
+    awards_cache,
+    "awards",
+    "awards_id",
+    awards_split
+  )
+);
+
+photo_form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+
+  const id = photo_fields.id.value || `photo_${Date.now()}`;
+
+  const item = {
+    id,
+    title: photo_fields.title.value.trim(),
+    caption: photo_fields.caption.value.trim(),
+    image_url: photo_fields.image_url.value.trim(),
+    sort_order: Number(photo_fields.sort_order.value || 1),
+    is_visible: photo_fields.is_visible.checked,
+  };
+
+  const existing_index = photos_cache.findIndex((e) => e.id === id);
+
+  if (existing_index >= 0) {
+    photos_cache[existing_index] = item;
+  } else {
+    photos_cache.push(item);
+  }
+
+  try {
+    await save_photos();
+    clear_photo_form();
+    show_toast(existing_index >= 0 ? "Photo updated ✓" : "Photo created ✓");
+    await load_dashboard_data();
+  } catch (err) {
+    console.error(err);
+    show_toast("Failed to save photo", true);
+  }
+});
+
+// New / reset buttons
 
 new_project_btn.addEventListener("click", clear_project_form);
 new_post_btn.addEventListener("click", clear_post_form);
 new_resume_btn.addEventListener("click", clear_resume_form);
+new_photo_btn.addEventListener("click", clear_photo_form);
 
 new_work_btn.addEventListener("click", () => {
   clear_work_form();
@@ -1056,18 +1337,22 @@ new_awards_btn.addEventListener("click", () => {
 reset_project_btn.addEventListener("click", clear_project_form);
 reset_post_btn.addEventListener("click", clear_post_form);
 reset_resume_btn.addEventListener("click", clear_resume_form);
+reset_photo_btn.addEventListener("click", clear_photo_form);
 
 reset_work_btn.addEventListener("click", () => {
   clear_work_form();
 });
+
 reset_academia_btn.addEventListener("click", () => {
   clear_entry_form(academia_fields, academia_cache, academia_split);
 });
+
 reset_awards_btn.addEventListener("click", () => {
   clear_entry_form(awards_fields, awards_cache, awards_split);
 });
 
 // Work current role toggle
+
 if (work_fields.is_current) {
   work_fields.is_current.addEventListener("change", () => {
     if (work_fields.is_current.checked) {
@@ -1079,7 +1364,7 @@ if (work_fields.is_current) {
   });
 }
 
-// ── Delegated click handler (edit / delete) ───────────────────────────────────
+// Delegated click handler
 
 document.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-action]");
@@ -1092,31 +1377,49 @@ document.addEventListener("click", async (event) => {
       const item = projects_cache.find((e) => e.id === id);
       if (item) fill_project_form(item);
     }
+
     if (type === "posts") {
       const item = posts_cache.find((e) => e.id === id);
       if (item) fill_post_form(item);
     }
+
     if (type === "resumes") {
       const item = resumes_cache.find((e) => e.id === id);
       if (item) fill_resume_form(item);
     }
+
     if (type === "work") {
       const item = work_cache.find((e) => e.id === id);
       if (item) fill_work_form(item);
     }
+
     if (type === "academia") {
       const item = academia_cache.find((e) => e.id === id);
-      if (item) fill_entry_form(academia_fields, item, "academia_tab", academia_split);
+      if (item) {
+        fill_entry_form(academia_fields, item, "academia_tab", academia_split);
+      }
     }
+
     if (type === "awards") {
       const item = awards_cache.find((e) => e.id === id);
-      if (item) fill_entry_form(awards_fields, item, "awards_tab", awards_split);
+      if (item) {
+        fill_entry_form(awards_fields, item, "awards_tab", awards_split);
+      }
     }
+
+    if (type === "photos") {
+      const item = photos_cache.find((e) => e.id === id);
+      if (item) fill_photo_form(item);
+    }
+
     return;
   }
 
   if (action === "delete") {
-    const ok = window.confirm("Are you sure you want to delete this item? This cannot be undone.");
+    const ok = window.confirm(
+      "Are you sure you want to delete this item? This cannot be undone."
+    );
+
     if (!ok) return;
 
     try {
@@ -1124,25 +1427,35 @@ document.addEventListener("click", async (event) => {
         projects_cache = projects_cache.filter((i) => i.id !== id);
         await save_projects();
       }
+
       if (type === "posts") {
         posts_cache = posts_cache.filter((i) => i.id !== id);
         await save_posts();
       }
+
       if (type === "resumes") {
         resumes_cache = resumes_cache.filter((i) => i.id !== id);
         await save_resumes();
       }
+
       if (type === "work") {
         work_cache = work_cache.filter((i) => i.id !== id);
         await save_work();
       }
+
       if (type === "academia") {
         academia_cache = academia_cache.filter((i) => i.id !== id);
         await save_entries("academia", academia_cache, "academia_id");
       }
+
       if (type === "awards") {
         awards_cache = awards_cache.filter((i) => i.id !== id);
         await save_entries("awards", awards_cache, "awards_id");
+      }
+
+      if (type === "photos") {
+        photos_cache = photos_cache.filter((i) => i.id !== id);
+        await save_photos();
       }
 
       show_toast("Item deleted ✓");
@@ -1154,30 +1467,62 @@ document.addEventListener("click", async (event) => {
   }
 });
 
-// ── Search ────────────────────────────────────────────────────────────────────
+// Search
 
 const get_all_searchable = () => [
-  ...projects_cache.map((i) => ({ ...i, _type: "projects", _tab: "projects_tab" })),
-  ...posts_cache.map((i) => ({ ...i, _type: "posts", _tab: "posts_tab" })),
-  ...resumes_cache.map((i) => ({ ...i, _type: "resumes", _tab: "resumes_tab" })),
-  ...work_cache.map((i) => ({ ...i, _type: "work", _tab: "work_tab" })),
-  ...academia_cache.map((i) => ({ ...i, _type: "academia", _tab: "academia_tab" })),
-  ...awards_cache.map((i) => ({ ...i, _type: "awards", _tab: "awards_tab" })),
+  ...projects_cache.map((i) => ({
+    ...i,
+    _type: "projects",
+    _tab: "projects_tab",
+  })),
+  ...posts_cache.map((i) => ({
+    ...i,
+    _type: "posts",
+    _tab: "posts_tab",
+  })),
+  ...resumes_cache.map((i) => ({
+    ...i,
+    _type: "resumes",
+    _tab: "resumes_tab",
+  })),
+  ...work_cache.map((i) => ({
+    ...i,
+    _type: "work",
+    _tab: "work_tab",
+  })),
+  ...academia_cache.map((i) => ({
+    ...i,
+    _type: "academia",
+    _tab: "academia_tab",
+  })),
+  ...awards_cache.map((i) => ({
+    ...i,
+    _type: "awards",
+    _tab: "awards_tab",
+  })),
+  ...photos_cache.map((i) => ({
+    ...i,
+    _type: "photos",
+    _tab: "photos_tab",
+  })),
 ];
 
 search_input.addEventListener("input", () => {
   const query = search_input.value.trim().toLowerCase();
+
   if (!query) {
     search_results.classList.remove("visible");
     return;
   }
 
   const matches = get_all_searchable()
-    .filter((item) =>
-      (item.title || "").toLowerCase().includes(query) ||
-      (item.subtitle || "").toLowerCase().includes(query) ||
-      (item.organization || "").toLowerCase().includes(query) ||
-      (item.description || "").toLowerCase().includes(query)
+    .filter(
+      (item) =>
+        (item.title || "").toLowerCase().includes(query) ||
+        (item.subtitle || "").toLowerCase().includes(query) ||
+        (item.organization || "").toLowerCase().includes(query) ||
+        (item.description || "").toLowerCase().includes(query) ||
+        (item.caption || "").toLowerCase().includes(query)
     )
     .slice(0, 12);
 
@@ -1188,12 +1533,18 @@ search_input.addEventListener("input", () => {
   }
 
   search_results.innerHTML = matches
-    .map((item) => `
-    <div class='search_result_item' data-tab='${item._tab}' data-id='${item.id}' data-type='${item._type}'>
-      <strong>${item.title || "Untitled"}</strong>
-      <span>${item._type}${item.organization ? " · " + item.organization : ""}${item.subtitle ? " · " + item.subtitle : ""}</span>
-    </div>
-  `)
+    .map(
+      (item) => `
+        <div class='search_result_item' data-tab='${item._tab}' data-id='${item.id}' data-type='${item._type}'>
+          <strong>${item.title || "Untitled"}</strong>
+          <span>${item._type}${
+            item.organization ? " · " + item.organization : ""
+          }${item.subtitle ? " · " + item.subtitle : ""}${
+            item.caption ? " · " + item.caption : ""
+          }</span>
+        </div>
+      `
+    )
     .join("");
 
   search_results.classList.add("visible");
@@ -1201,8 +1552,11 @@ search_input.addEventListener("input", () => {
 
 search_results.addEventListener("click", (event) => {
   const result = event.target.closest(".search_result_item");
+
   if (!result || !result.dataset.tab) return;
+
   const { tab, id, type } = result.dataset;
+
   switch_tab(tab);
   search_input.value = "";
   search_results.classList.remove("visible");
@@ -1212,8 +1566,16 @@ search_results.addEventListener("click", (event) => {
   if (type === "awards") open_form(awards_split);
 
   setTimeout(() => {
-    const btn = document.querySelector(`[data-action='edit'][data-type='${type}'][data-id='${id}']`);
-    if (btn) btn.closest(".item_card").scrollIntoView({ behavior: "smooth", block: "center" });
+    const btn = document.querySelector(
+      `[data-action='edit'][data-type='${type}'][data-id='${id}']`
+    );
+
+    if (btn) {
+      btn.closest(".item_card").scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }
   }, 100);
 });
 
@@ -1223,13 +1585,16 @@ document.addEventListener("click", (event) => {
   }
 });
 
-// ── Auth buttons ──────────────────────────────────────────────────────────────
+// Auth buttons
 
 login_btn.addEventListener("click", async () => {
   clear_local_session();
+
   const verifier = randomString(96);
   const challenge = await createCodeChallenge(verifier);
+
   sessionStorage.setItem(PKCE_VERIFIER_KEY, verifier);
+
   const loginUrl =
     `${COGNITO_DOMAIN}/oauth2/authorize` +
     `?identity_provider=Google` +
@@ -1239,24 +1604,29 @@ login_btn.addEventListener("click", async () => {
     `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
     `&code_challenge_method=S256` +
     `&code_challenge=${encodeURIComponent(challenge)}`;
+
   window.location.href = loginUrl;
 });
 
 logout_btn.addEventListener("click", () => {
   const confirmed = window.confirm("Are you sure you want to log out?");
+
   if (!confirmed) return;
+
   end_session("Signed out", true);
 });
 
-// ── Boot ──────────────────────────────────────────────────────────────────────
+// Boot
 
 const boot = async () => {
   const just_logged_in = await handle_cognito_redirect();
 
   if (just_logged_in || has_valid_session()) {
     const email = sessionStorage.getItem(SESSION_EMAIL_KEY) || "";
+
     set_logged_in_view(email);
     schedule_auto_logout();
+
     try {
       await load_dashboard_data();
       show_toast("Dashboard loaded ✓");
