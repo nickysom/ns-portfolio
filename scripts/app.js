@@ -2,6 +2,11 @@ const API_BASE = 'https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod'
 
 const getEl = (id) => document.getElementById(id)
 
+const hideSection = (sectionId) => {
+  document.getElementById(sectionId)?.remove()
+  document.querySelector(`a[href="#${sectionId}"]`)?.remove()
+}
+
 const setText = (id, value, fallback = '') => {
   const el = getEl(id)
   if (el) el.textContent = value || fallback
@@ -51,6 +56,7 @@ const normalizeResumes = (items = []) =>
     title: item.title || 'Current Resume',
     file_name: item.file_name || '',
     file_url: item.file_url || '',
+    image_url: item.image_url || '',
     is_current: !!item.is_current
   }))
 
@@ -78,6 +84,7 @@ const normalizeEntries = (items = [], id_key) =>
     description: item.description || '',
     link: item.link || '',
     image_url: item.image_url || '',
+    is_visible: item.is_visible !== false,
     sort_order: Number(item.sort_order || 9999)
   }))
 
@@ -164,7 +171,6 @@ const createWorkCompanyCard = (organization, roles) => {
   const newestRole = sortedRoles[0]
 
   const overallStart = [...sortedRoles].map((role) => role.start_date || '').filter(Boolean).sort()[0] || ''
-
   const hasCurrentRole = sortedRoles.some((role) => role.is_current)
 
   const overallEnd = hasCurrentRole
@@ -222,10 +228,12 @@ const renderProjects = (items = []) => {
   const grid = getEl('projects_grid')
   if (!grid) return
 
-  const visibleProjects = normalizeProjects(items).filter((project) => project.is_visible).sort((a, b) => a.sort_order - b.sort_order)
+  const visibleProjects = normalizeProjects(items)
+    .filter((project) => project.is_visible)
+    .sort((a, b) => a.sort_order - b.sort_order)
 
   if (!visibleProjects.length) {
-    grid.innerHTML = `<article class='project_card'><h3>No projects yet</h3><p>Add projects from the admin dashboard.</p></article>`
+    hideSection('projects_section')
     return
   }
 
@@ -238,19 +246,21 @@ const renderPosts = (items = []) => {
   const grid = getEl('posts_grid')
   if (!grid) return
 
-  const published = normalizePosts(items).filter((post) => post.is_published).sort((a, b) => a.sort_order - b.sort_order)
+  const published = normalizePosts(items)
+    .filter((post) => post.is_published)
+    .sort((a, b) => a.sort_order - b.sort_order)
 
   if (!published.length) {
-    grid.innerHTML = `<article class='project_card'><h3>No posts yet</h3><p>Add posts from the admin dashboard.</p></article>`
+    hideSection('posts_section')
     return
   }
 
   grid.innerHTML = published.slice(0, 4).map((post) => `
-      <article class='project_card'>
-        <h3>${escapeHtml(post.title)}</h3>
-        <p>${escapeHtml(post.excerpt)}</p>
-      </article>
-    `).join('')
+    <article class='project_card'>
+      <h3>${escapeHtml(post.title)}</h3>
+      <p>${escapeHtml(post.excerpt)}</p>
+    </article>
+  `).join('')
 }
 
 const renderResume = (items = []) => {
@@ -263,44 +273,27 @@ const renderResume = (items = []) => {
 
   if (!textEl || !linkEl) return
 
-  if (!current) {
-    textEl.textContent = 'No resume available yet.'
-    linkEl.style.display = 'none'
-
-    if (viewerWrap) {
-      viewerWrap.innerHTML = ''
-      viewerWrap.style.display = 'none'
-    }
-
+  if (!current || !current.file_url) {
+    hideSection('resume_section')
     return
   }
 
   textEl.textContent = current.title || 'Current Resume'
+  linkEl.href = current.file_url
+  linkEl.style.display = 'inline-block'
 
-  if (current.file_url) {
-    linkEl.href = current.file_url
-    linkEl.style.display = 'inline-block'
+  if (viewerWrap) {
+    const previewUrl = current.image_url || current.file_url
 
-    if (viewerWrap) {
-      const previewUrl = current.image_url || current.file_url
-
-      viewerWrap.style.display = 'block'
-      viewerWrap.innerHTML = `
-        <img
-          src="${escapeHtml(previewUrl)}"
-          alt="${escapeHtml(current.title || 'Current Resume')}"
-          class="resume_image"
-          loading="lazy"
-        />
-      `
-    }
-  } else {
-    linkEl.style.display = 'none'
-
-    if (viewerWrap) {
-      viewerWrap.innerHTML = ''
-      viewerWrap.style.display = 'none'
-    }
+    viewerWrap.style.display = 'block'
+    viewerWrap.innerHTML = `
+      <img
+        src="${escapeHtml(previewUrl)}"
+        alt="${escapeHtml(current.title || 'Current Resume')}"
+        class="resume_image"
+        loading="lazy"
+      />
+    `
   }
 }
 
@@ -313,7 +306,7 @@ const renderWork = (items = []) => {
     .sort(compareWorkItems)
 
   if (!visibleRoles.length) {
-    container.innerHTML = `<p class='entries_empty'>Professional experience coming soon.</p>`
+    hideSection('work_section')
     return
   }
 
@@ -331,14 +324,22 @@ const renderWork = (items = []) => {
   container.innerHTML = groupedEntries.join('')
 }
 
-const renderEntries = (containerId, items = [], id_key, emptyMessage) => {
+const renderEntries = (containerId, items = [], id_key) => {
   const container = getEl(containerId)
   if (!container) return
 
-  const entries = normalizeEntries(items, id_key).sort((a, b) => a.sort_order - b.sort_order)
+  const sectionMap = {
+    academia_grid: 'academia_section',
+    awards_grid: 'awards_section',
+    photography_grid: 'photography_section'
+  }
+
+  const entries = normalizeEntries(items, id_key)
+    .filter((entry) => entry.is_visible)
+    .sort((a, b) => a.sort_order - b.sort_order)
 
   if (!entries.length) {
-    container.innerHTML = `<p class='entries_empty'>${emptyMessage}</p>`
+    hideSection(sectionMap[containerId])
     return
   }
 
@@ -365,14 +366,15 @@ const finishLoading = () => {
 
 const loadContent = async () => {
   try {
-    const [site, projects, posts, resumes, work, academia, awards] = await Promise.all([
+    const [site, projects, posts, resumes, work, academia, awards, photos] = await Promise.all([
       apiGet('site'),
       safeGet('projects'),
       safeGet('posts'),
       safeGet('resumes'),
       safeGet('work'),
       safeGet('academia'),
-      safeGet('awards')
+      safeGet('awards'),
+      safeGet('photos')
     ])
 
     setText('title', site.title, '')
@@ -389,8 +391,9 @@ const loadContent = async () => {
     renderPosts(posts.items || [])
     renderResume(resumes.items || [])
     renderWork(work.items || [])
-    renderEntries('academia_grid', academia.items || [], 'academia_id', 'Academic background coming soon.')
-    renderEntries('awards_grid', awards.items || [], 'awards_id', 'Awards and achievements coming soon.')
+    renderEntries('academia_grid', academia.items || [], 'academia_id')
+    renderEntries('awards_grid', awards.items || [], 'awards_id')
+    renderEntries('photography_grid', photos.items || [], 'photo_id')
   } catch (error) {
     console.error('Failed to load portfolio content:', error)
   } finally {

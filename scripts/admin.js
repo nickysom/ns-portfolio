@@ -1616,9 +1616,7 @@ logout_btn.addEventListener("click", () => {
   end_session("Signed out", true);
 });
 
-// Boot
-
-const boot = async () => {
+/*const boot = async () => {
   const just_logged_in = await handle_cognito_redirect();
 
   if (just_logged_in || has_valid_session()) {
@@ -1638,6 +1636,21 @@ const boot = async () => {
     clear_local_session();
     set_logged_out_view();
   }
-};
+};*/
+
+
+const DEV_BYPASS_LOGIN = true;
+
+if (DEV_BYPASS_LOGIN) {
+  set_logged_in_view("dev mode");
+  load_dashboard_data()
+    .then(() => show_toast("Dashboard loaded in dev mode ✓"))
+    .catch((err) => {
+      console.error("dashboard load failed:", err);
+      show_toast("Failed to load dashboard data", true);
+    });
+} else {
+  boot();
+}
 
 boot();
