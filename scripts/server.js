@@ -132,12 +132,12 @@ app.post("/api/sequence_gate", (req, res) => {
   });
 });
 
-app.get("../pages/admin.html", gate_middleware, (req, res) => {
-  res.sendFile(path.join(__dirname, "../pages/admin.html"));
+app.get("/pages/admin.html", gate_middleware, (req, res) => {
+  res.sendFile(path.join(__dirname, "pages", "admin.html"));
 });
 
 app.get("/", (req, res) => {
-  res.redirect("../pages/test.html");
+  res.redirect("/pages/test.html");
 });
 
 app.listen(port, () => {
