@@ -1,3 +1,16 @@
+// =============================================================================
+// Portfolio Admin Dashboard
+//
+// This file controls authentication, API reads/writes, dashboard forms,
+// rendering, searching, and ordered-list behavior.
+//
+// Ordered-list rule used by Projects, Posts, Academia, Awards, and Photos:
+//   - Visible/published items are numbered 1, 2, 3, ... with no gaps.
+//   - Hidden/draft items are "Unlisted" and have sort_order = null.
+//   - Restoring an unlisted item places it at the end.
+//   - Moving or deleting an item automatically closes numbering gaps.
+// =============================================================================
+
 const API_BASE = "https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod";
 const COGNITO_DOMAIN =
   "https://us-east-2jfof4gtel.auth.us-east-2.amazoncognito.com";
@@ -14,7 +27,8 @@ const WARNING_MS = 2 * 60 * 1000;
 
 let warning_timer = null;
 
-// DOM refs
+// DOM references
+// Cache frequently-used HTML elements so the rest of the file can reuse them.
 
 const auth_status = document.getElementById("auth_status");
 const login_btn = document.getElementById("login_btn");
@@ -162,7 +176,8 @@ const work_split = document.getElementById("work_split");
 const academia_split = document.getElementById("academia_split");
 const awards_split = document.getElementById("awards_split");
 
-// State
+// Dashboard state
+// Each cache mirrors one collection returned by the API.
 
 let projects_cache = [];
 let posts_cache = [];
@@ -173,7 +188,8 @@ let awards_cache = [];
 let photos_cache = [];
 let logout_timer = null;
 
-// Toast
+// Toast notifications
+// Shows a small success/error message for three seconds.
 
 let toast_timeout = null;
 
@@ -188,12 +204,13 @@ const show_toast = (text, is_error = false) => {
   }, 3000);
 };
 
-// Form panel show/hide
+// Form panel helpers
+// Work, Academia, and Awards use sliding form panels.
 
 const open_form = (split_el) => split_el.classList.add("form_open");
 const close_form = (split_el) => split_el.classList.remove("form_open");
 
-// Helpers
+// General helpers
 
 const slugify = (value) =>
   value
@@ -243,36 +260,114 @@ const format_work_date_range = (item) => {
 
 const sort_work_items = (items = []) =>
   [...items].sort((a, b) => {
+    // Current jobs appear first. Older jobs are sorted newest to oldest.
     if (a.is_current && !b.is_current) return -1;
     if (!a.is_current && b.is_current) return 1;
 
     return String(b.start_date || "").localeCompare(String(a.start_date || ""));
   });
 
-const insert_at_sort_order = (cache, item) => {
-  const requested_position = Math.max(
-    1,
-    Math.min(Number(item.sort_order) || 1, cache.length + 1)
+// Returns true when an item participates in its numbered list.
+// Projects, Academia, Awards, and Photos use "is_visible".
+// Posts use "is_published".
+const is_ordered_item_listed = (item, visibility_key = "is_visible") =>
+  item[visibility_key] !== false;
+
+// Returns the number of visible/published items in an ordered list.
+const get_listed_item_count = (list, visibility_key = "is_visible") =>
+  list.filter((item) => is_ordered_item_listed(item, visibility_key)).length;
+
+// Returns the default position for a new visible/published item.
+const get_next_sort_order = (list, visibility_key = "is_visible") =>
+  get_listed_item_count(list, visibility_key) + 1;
+
+// Repairs an ordered list in place.
+// Visible items are sorted and renumbered. Hidden items become Unlisted.
+const normalize_ordered_list = (list, visibility_key = "is_visible") => {
+  const listed_items = list
+    .filter((item) => is_ordered_item_listed(item, visibility_key))
+    .sort(
+      (a, b) =>
+        Number(a.sort_order || Number.MAX_SAFE_INTEGER) -
+        Number(b.sort_order || Number.MAX_SAFE_INTEGER),
+    );
+
+  const unlisted_items = list.filter(
+    (item) => !is_ordered_item_listed(item, visibility_key),
   );
 
-  const existing_index = cache.findIndex(
-    (existing_item) => existing_item.id === item.id
-  );
-
-  if (existing_index >= 0) {
-    cache.splice(existing_index, 1);
-  }
-
-  cache.sort((a, b) => a.sort_order - b.sort_order);
-
-  cache.splice(requested_position - 1, 0, item);
-
-  cache.forEach((cache_item, index) => {
-    cache_item.sort_order = index + 1;
+  listed_items.forEach((item, index) => {
+    item.sort_order = index + 1;
   });
+
+  unlisted_items.forEach((item) => {
+    item.sort_order = null;
+  });
+
+  // Mutating the original array preserves references used by the forms.
+  list.splice(0, list.length, ...listed_items, ...unlisted_items);
+
+  return list;
 };
 
-// Auth views
+// Creates or updates one item and applies the shared ordering rules.
+const update_ordered_list = (list, item, visibility_key = "is_visible") => {
+  const old_item = list.find((entry) => entry.id === item.id);
+  const was_listed = old_item
+    ? is_ordered_item_listed(old_item, visibility_key)
+    : false;
+  const will_be_listed = is_ordered_item_listed(item, visibility_key);
+
+  // Remove the previous copy before deciding the item's new position.
+  const remaining = list.filter((entry) => entry.id !== item.id);
+  normalize_ordered_list(remaining, visibility_key);
+
+  const listed_items = remaining.filter((entry) =>
+    is_ordered_item_listed(entry, visibility_key),
+  );
+  const unlisted_items = remaining.filter(
+    (entry) => !is_ordered_item_listed(entry, visibility_key),
+  );
+
+  if (!will_be_listed) {
+    // Hidden/draft items are stored after the numbered items.
+    item.sort_order = null;
+    unlisted_items.push(item);
+  } else {
+    // An item restored from Unlisted always returns at the end.
+    const restored_from_unlisted = Boolean(old_item) && !was_listed;
+    const requested_position = restored_from_unlisted
+      ? listed_items.length + 1
+      : Math.max(
+          1,
+          Math.min(
+            Number(item.sort_order) || listed_items.length + 1,
+            listed_items.length + 1,
+          ),
+        );
+
+    // Inserting here automatically pushes later items down one position.
+    listed_items.splice(requested_position - 1, 0, item);
+  }
+
+  // Preserve the insertion order before the final normalization pass.
+  listed_items.forEach((entry, index) => {
+    entry.sort_order = index + 1;
+  });
+
+  list.splice(0, list.length, ...listed_items, ...unlisted_items);
+  return normalize_ordered_list(list, visibility_key);
+};
+
+// Deletes one item and immediately repairs the remaining numbering.
+const delete_from_ordered_list = (list, id, visibility_key = "is_visible") => {
+  const remaining = list.filter((item) => item.id !== id);
+  list.splice(0, list.length, ...remaining);
+  return normalize_ordered_list(list, visibility_key);
+};
+
+// Authentication views
+// Switches the page between signed-in and signed-out layouts.
 
 const set_logged_out_view = () => {
   auth_status.textContent = "Not signed in";
@@ -292,7 +387,8 @@ const set_logged_in_view = (email = "") => {
   dashboard_shell.style.display = "grid";
 };
 
-// Session
+// Session management
+// Stores the login token in sessionStorage and signs out after inactivity.
 
 const clear_local_session = () => {
   sessionStorage.removeItem(SESSION_TOKEN_KEY);
@@ -320,7 +416,7 @@ const parseJwt = (token) => {
       atob(base64)
         .split("")
         .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
-        .join("")
+        .join(""),
     );
 
     return JSON.parse(json);
@@ -331,7 +427,7 @@ const parseJwt = (token) => {
 
 const buildLogoutUrl = () =>
   `${COGNITO_DOMAIN}/logout?client_id=${encodeURIComponent(
-    CLIENT_ID
+    CLIENT_ID,
   )}&logout_uri=${encodeURIComponent(REDIRECT_URI)}`;
 
 const end_session = (message = "Signed out", redirectToCognito = false) => {
@@ -368,7 +464,7 @@ const schedule_auto_logout = () => {
   if (warning_time > 0) {
     warning_timer = setTimeout(() => {
       const stay = window.confirm(
-        "Your session will expire in 2 minutes. Press OK to stay signed in."
+        "Your session will expire in 2 minutes. Press OK to stay signed in.",
       );
 
       if (stay) {
@@ -381,7 +477,7 @@ const schedule_auto_logout = () => {
 
   logout_timer = setTimeout(
     () => end_session("Session expired", true),
-    remaining
+    remaining,
   );
 };
 
@@ -407,7 +503,7 @@ const has_valid_session = () => {
   return true;
 };
 
-// PKCE
+// Cognito PKCE authentication helpers
 
 const randomString = (length = 96) => {
   const chars =
@@ -509,7 +605,8 @@ const handle_cognito_redirect = async () => {
   }
 };
 
-// API
+// API helpers
+// Reads and writes content through API Gateway.
 
 const api_get = async (id) => {
   const response = await fetch(`${API_BASE}/content/${id}`);
@@ -549,9 +646,10 @@ const safe_get = async (id) => {
 };
 
 // Normalizers
+// Convert API field names into the simpler shape used by the dashboard.
 
-const normalize_projects = (items = []) =>
-  items.map((item, i) => ({
+const normalize_projects = (items = []) => {
+  const normalized = items.map((item, index) => ({
     id: item.project_id || "",
     title: item.title || "",
     slug: item.slug || "",
@@ -561,11 +659,15 @@ const normalize_projects = (items = []) =>
     image_url: item.image_url || "",
     is_visible: item.is_visible !== false,
     is_featured: !!item.is_featured,
-    sort_order: Number(item.sort_order ?? i + 1),
+    sort_order:
+      item.is_visible === false ? null : Number(item.sort_order ?? index + 1),
   }));
 
-const normalize_posts = (items = []) =>
-  items.map((item, i) => ({
+  return normalize_ordered_list(normalized, "is_visible");
+};
+
+const normalize_posts = (items = []) => {
+  const normalized = items.map((item, index) => ({
     id: item.post_id || "",
     title: item.title || "",
     slug: item.slug || "",
@@ -573,8 +675,12 @@ const normalize_posts = (items = []) =>
     content: item.content || "",
     cover_image_url: item.cover_image_url || "",
     is_published: item.is_published !== false,
-    sort_order: Number(item.sort_order ?? i + 1),
+    sort_order:
+      item.is_published === false ? null : Number(item.sort_order ?? index + 1),
   }));
+
+  return normalize_ordered_list(normalized, "is_published");
+};
 
 const normalize_resumes = (items = []) =>
   items.map((item) => ({
@@ -599,8 +705,8 @@ const normalize_work = (items = []) =>
     is_visible: item.is_visible !== false,
   }));
 
-const normalize_entries = (items = [], id_key) =>
-  items.map((item, i) => ({
+const normalize_entries = (items = [], id_key) => {
+  const normalized = items.map((item, index) => ({
     id: item[id_key] || "",
     title: item.title || "",
     subtitle: item.subtitle || "",
@@ -608,21 +714,29 @@ const normalize_entries = (items = [], id_key) =>
     date_range: item.date_range || "",
     description: item.description || "",
     link: item.link || "",
-    sort_order: Number(item.sort_order ?? i + 1),
+    sort_order:
+      item.is_visible === false ? null : Number(item.sort_order ?? index + 1),
     is_visible: item.is_visible !== false,
   }));
 
-const normalize_photos = (items = []) =>
-  items.map((item, i) => ({
+  return normalize_ordered_list(normalized, "is_visible");
+};
+
+const normalize_photos = (items = []) => {
+  const normalized = items.map((item, index) => ({
     id: item.photo_id || "",
     title: item.title || "",
     caption: item.caption || "",
     image_url: item.image_url || "",
-    sort_order: Number(item.sort_order ?? i + 1),
+    sort_order:
+      item.is_visible === false ? null : Number(item.sort_order ?? index + 1),
     is_visible: item.is_visible !== false,
   }));
 
-// Render
+  return normalize_ordered_list(normalized, "is_visible");
+};
+
+// Dashboard rendering
 
 const render_list = (container, items, type) => {
   if (!container) return;
@@ -635,8 +749,21 @@ const render_list = (container, items, type) => {
   container.innerHTML = items
     .map((item) => {
       const is_entry_type = ["work", "academia", "awards", "photos"].includes(
-        type
+        type,
       );
+
+      const is_ordered_type = [
+        "projects",
+        "posts",
+        "academia",
+        "awards",
+        "photos",
+      ].includes(type);
+
+      const is_listed =
+        type === "posts"
+          ? item.is_published !== false
+          : item.is_visible !== false;
 
       const status_text =
         type === "projects"
@@ -659,14 +786,12 @@ const render_list = (container, items, type) => {
                     : "Hidden"
                   : item.date_range || "";
 
-      const sort_badge =
-        type === "projects" ||
-        type === "posts" ||
-        type === "academia" ||
-        type === "awards" ||
-        type === "photos"
-          ? `<span class='item_sort_badge'>#${item.sort_order}</span>`
-          : "";
+      // Ordered items show their number. Hidden/draft items show Unlisted.
+      const sort_badge = is_ordered_type
+        ? `<span class='item_sort_badge'>${
+            is_listed ? `#${item.sort_order}` : "Unlisted"
+          }</span>`
+        : "";
 
       const visibility_badge =
         is_entry_type && !item.is_visible
@@ -716,6 +841,7 @@ const update_counts = () => {
 };
 
 // Clear forms
+// Resets each editor to its default "new item" state.
 
 const clear_project_form = () => {
   project_fields.id.value = "";
@@ -727,7 +853,10 @@ const clear_project_form = () => {
   project_fields.image_url.value = "";
   project_fields.is_visible.checked = true;
   project_fields.is_featured.checked = false;
-  project_fields.sort_order.value = projects_cache.length + 1;
+  project_fields.sort_order.value = get_next_sort_order(
+    projects_cache,
+    "is_visible",
+  );
 };
 
 const clear_post_form = () => {
@@ -738,7 +867,10 @@ const clear_post_form = () => {
   post_fields.content.value = "";
   post_fields.cover_image_url.value = "";
   post_fields.is_published.checked = true;
-  post_fields.sort_order.value = posts_cache.length + 1;
+  post_fields.sort_order.value = get_next_sort_order(
+    posts_cache,
+    "is_published",
+  );
 };
 
 const clear_resume_form = () => {
@@ -776,7 +908,7 @@ const clear_entry_form = (fields, cache, split_el) => {
   fields.date_range.value = "";
   fields.description.value = "";
   fields.link.value = "";
-  fields.sort_order.value = cache.length + 1;
+  fields.sort_order.value = get_next_sort_order(cache, "is_visible");
   fields.is_visible.checked = true;
 
   if (split_el) {
@@ -790,11 +922,15 @@ const clear_photo_form = () => {
   photo_fields.caption.value = "";
   photo_fields.file.value = "";
   photo_fields.image_url.value = "";
-  photo_fields.sort_order.value = photos_cache.length + 1;
+  photo_fields.sort_order.value = get_next_sort_order(
+    photos_cache,
+    "is_visible",
+  );
   photo_fields.is_visible.checked = true;
 };
 
 // Fill forms
+// Copies a selected item into its editor for updating.
 
 const fill_project_form = (item) => {
   project_fields.id.value = item.id;
@@ -806,7 +942,7 @@ const fill_project_form = (item) => {
   project_fields.image_url.value = item.image_url || "";
   project_fields.is_visible.checked = !!item.is_visible;
   project_fields.is_featured.checked = !!item.is_featured;
-  project_fields.sort_order.value = item.sort_order ?? 1;
+  project_fields.sort_order.value = item.sort_order ?? "";
   switch_tab("projects_tab");
 };
 
@@ -818,7 +954,7 @@ const fill_post_form = (item) => {
   post_fields.content.value = item.content || "";
   post_fields.cover_image_url.value = item.cover_image_url || "";
   post_fields.is_published.checked = !!item.is_published;
-  post_fields.sort_order.value = item.sort_order ?? 1;
+  post_fields.sort_order.value = item.sort_order ?? "";
   switch_tab("posts_tab");
 };
 
@@ -865,7 +1001,8 @@ const fill_entry_form = (fields, item, tab_id, split_el) => {
   fields.date_range.value = item.date_range || "";
   fields.description.value = item.description || "";
   fields.link.value = item.link || "";
-  fields.sort_order.value = item.sort_order ?? 1;
+
+  fields.sort_order.value = item.sort_order ?? "";
   fields.is_visible.checked = item.is_visible !== false;
 
   switch_tab(tab_id);
@@ -877,7 +1014,7 @@ const fill_photo_form = (item) => {
   photo_fields.title.value = item.title || "";
   photo_fields.caption.value = item.caption || "";
   photo_fields.image_url.value = item.image_url || "";
-  photo_fields.sort_order.value = item.sort_order ?? 1;
+  photo_fields.sort_order.value = item.sort_order ?? "";
   photo_fields.is_visible.checked = item.is_visible !== false;
   photo_fields.file.value = "";
 
@@ -885,52 +1022,56 @@ const fill_photo_form = (item) => {
 };
 
 // API save helpers
+// These functions convert dashboard objects back into the API's field names.
+// Ordered lists are normalized immediately before they are saved.
 
-const save_projects = () =>
-  api_put("projects", {
+const save_projects = () => {
+  normalize_ordered_list(projects_cache, "is_visible");
+
+  return api_put("projects", {
     id: "projects",
-    items: [...projects_cache]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((p) => ({
-        project_id: p.id,
-        title: p.title,
-        slug: p.slug,
-        category: p.category,
-        description: p.description,
-        link: p.link,
-        image_url: p.image_url,
-        is_visible: p.is_visible,
-        is_featured: p.is_featured,
-        sort_order: p.sort_order,
-      })),
+    items: projects_cache.map((project) => ({
+      project_id: project.id,
+      title: project.title,
+      slug: project.slug,
+      category: project.category,
+      description: project.description,
+      link: project.link,
+      image_url: project.image_url,
+      is_visible: project.is_visible,
+      is_featured: project.is_featured,
+      sort_order: project.sort_order,
+    })),
   });
+};
 
-const save_posts = () =>
-  api_put("posts", {
+const save_posts = () => {
+  normalize_ordered_list(posts_cache, "is_published");
+
+  return api_put("posts", {
     id: "posts",
-    items: [...posts_cache]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((p) => ({
-        post_id: p.id,
-        title: p.title,
-        slug: p.slug,
-        excerpt: p.excerpt,
-        content: p.content,
-        cover_image_url: p.cover_image_url,
-        is_published: p.is_published,
-        sort_order: p.sort_order,
-      })),
+    items: posts_cache.map((post) => ({
+      post_id: post.id,
+      title: post.title,
+      slug: post.slug,
+      excerpt: post.excerpt,
+      content: post.content,
+      cover_image_url: post.cover_image_url,
+      is_published: post.is_published,
+      sort_order: post.sort_order,
+    })),
   });
+};
 
 const save_resumes = () =>
   api_put("resumes", {
     id: "resumes",
-    items: resumes_cache.map((r) => ({
-      resume_id: r.id,
-      title: r.title,
-      file_name: r.file_name,
-      file_url: r.file_url,
-      is_current: r.is_current,
+    items: resumes_cache.map((resume) => ({
+      resume_id: resume.id,
+      title: resume.title,
+      file_name: resume.file_name,
+      file_url: resume.file_url,
+      is_current: resume.is_current,
     })),
   });
 
@@ -951,38 +1092,40 @@ const save_work = () =>
     })),
   });
 
-const save_entries = (section_key, cache, id_key) =>
-  api_put(section_key, {
-    id: section_key,
-    items: [...cache]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((entry) => ({
-        [id_key]: entry.id,
-        title: entry.title,
-        subtitle: entry.subtitle,
-        organization: entry.organization,
-        date_range: entry.date_range,
-        description: entry.description,
-        link: entry.link,
-        sort_order: entry.sort_order,
-        is_visible: entry.is_visible,
-      })),
-  });
+const save_entries = (section_key, cache, id_key) => {
+  normalize_ordered_list(cache, "is_visible");
 
-const save_photos = () =>
-  api_put("photos", {
-    id: "photos",
-    items: [...photos_cache]
-      .sort((a, b) => a.sort_order - b.sort_order)
-      .map((photo) => ({
-        photo_id: photo.id,
-        title: photo.title,
-        caption: photo.caption,
-        image_url: photo.image_url,
-        sort_order: photo.sort_order,
-        is_visible: photo.is_visible,
-      })),
+  return api_put(section_key, {
+    id: section_key,
+    items: cache.map((entry) => ({
+      [id_key]: entry.id,
+      title: entry.title,
+      subtitle: entry.subtitle,
+      organization: entry.organization,
+      date_range: entry.date_range,
+      description: entry.description,
+      link: entry.link,
+      sort_order: entry.sort_order,
+      is_visible: entry.is_visible,
+    })),
   });
+};
+
+const save_photos = () => {
+  normalize_ordered_list(photos_cache, "is_visible");
+
+  return api_put("photos", {
+    id: "photos",
+    items: photos_cache.map((photo) => ({
+      photo_id: photo.id,
+      title: photo.title,
+      caption: photo.caption,
+      image_url: photo.image_url,
+      sort_order: photo.sort_order,
+      is_visible: photo.is_visible,
+    })),
+  });
+};
 
 // Load data
 
@@ -1015,30 +1158,13 @@ const load_dashboard_data = async () => {
     safe_get("photos"),
   ]);
 
-  projects_cache = normalize_projects(projects_data.items || []).sort(
-    (a, b) => a.sort_order - b.sort_order
-  );
-
-  posts_cache = normalize_posts(posts_data.items || []).sort(
-    (a, b) => a.sort_order - b.sort_order
-  );
-
+  projects_cache = normalize_projects(projects_data.items || []);
+  posts_cache = normalize_posts(posts_data.items || []);
   resumes_cache = normalize_resumes(resumes_data.items || []);
-
   work_cache = sort_work_items(normalize_work(work_data.items || []));
-
-  academia_cache = normalize_entries(
-    academia_data.items || [],
-    "academia_id"
-  ).sort((a, b) => a.sort_order - b.sort_order);
-
-  awards_cache = normalize_entries(awards_data.items || [], "awards_id").sort(
-    (a, b) => a.sort_order - b.sort_order
-  );
-
-  photos_cache = normalize_photos(photos_data.items || []).sort(
-    (a, b) => a.sort_order - b.sort_order
-  );
+  academia_cache = normalize_entries(academia_data.items || [], "academia_id");
+  awards_cache = normalize_entries(awards_data.items || [], "awards_id");
+  photos_cache = normalize_photos(photos_data.items || []);
 
   render_list(projects_list, projects_cache, "projects");
   render_list(posts_list, posts_cache, "posts");
@@ -1052,6 +1178,7 @@ const load_dashboard_data = async () => {
 };
 
 // Form submissions
+// Builds an item from the form, updates its cache, then saves the collection.
 
 site_form.addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -1081,30 +1208,27 @@ project_form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const id = project_fields.id.value || `project_${Date.now()}`;
+  const existing_index = projects_cache.findIndex((entry) => entry.id === id);
 
   const item = {
     id,
     title: project_fields.title.value.trim(),
-    slug: project_fields.slug.value.trim() || slugify(project_fields.title.value),
+    slug:
+      project_fields.slug.value.trim() || slugify(project_fields.title.value),
     category: project_fields.category.value.trim(),
     description: project_fields.description.value.trim(),
     link: project_fields.link.value.trim(),
     image_url: project_fields.image_url.value.trim(),
     is_visible: project_fields.is_visible.checked,
     is_featured: project_fields.is_featured.checked,
-    sort_order: Number(project_fields.sort_order.value || 1),
+    sort_order: Number(
+      project_fields.sort_order.value ||
+        get_next_sort_order(projects_cache, "is_visible"),
+    ),
   };
 
-  const existing_index = projects_cache.findIndex((e) => e.id === id);
-
-  if (existing_index >= 0) {
-    projects_cache[existing_index] = {
-      ...projects_cache[existing_index],
-      ...item,
-    };
-  } else {
-    projects_cache.push(item);
-  }
+  // The shared helper handles creating, moving, hiding, and restoring.
+  update_ordered_list(projects_cache, item, "is_visible");
 
   try {
     await save_projects();
@@ -1121,6 +1245,7 @@ post_form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const id = post_fields.id.value || `post_${Date.now()}`;
+  const existing_index = posts_cache.findIndex((entry) => entry.id === id);
 
   const item = {
     id,
@@ -1130,23 +1255,14 @@ post_form.addEventListener("submit", async (event) => {
     content: post_fields.content.value.trim(),
     cover_image_url: post_fields.cover_image_url.value.trim(),
     is_published: post_fields.is_published.checked,
-    sort_order: Number(post_fields.sort_order.value || 1),
+    sort_order: Number(
+      post_fields.sort_order.value ||
+        get_next_sort_order(posts_cache, "is_published"),
+    ),
   };
 
-  const existing_index = posts_cache.findIndex((e) => e.id === id);
-
-  insert_at_sort_order(posts_cache, item);
-
-  try {
-    await save_posts();
-    clear_post_form();
-    show_toast(existing_index >= 0 ? "Post updated ✓" : "Post created ✓");
-    await load_dashboard_data();
-  } catch (err) {
-    console.error(err);
-    show_toast("Failed to save post", true);
-  }
-});
+  // Draft posts are Unlisted; republishing appends them to the end.
+  update_ordered_list(posts_cache, item, "is_published");
 
   try {
     await save_posts();
@@ -1228,7 +1344,7 @@ work_form.addEventListener("submit", async (event) => {
     await save_work();
     clear_work_form();
     show_toast(
-      existing_index >= 0 ? "Work entry updated ✓" : "Work entry created ✓"
+      existing_index >= 0 ? "Work entry updated ✓" : "Work entry created ✓",
     );
     await load_dashboard_data();
   } catch (err) {
@@ -1243,7 +1359,7 @@ const handle_entry_submit = async (
   cache_ref,
   section_key,
   id_key,
-  split_el
+  split_el,
 ) => {
   event.preventDefault();
 
@@ -1261,13 +1377,10 @@ const handle_entry_submit = async (
     is_visible: fields.is_visible.checked,
   };
 
-  const existing_index = cache_ref.findIndex((e) => e.id === id);
+  const existing_index = cache_ref.findIndex((entry) => entry.id === id);
 
-  if (existing_index >= 0) {
-    cache_ref[existing_index] = item;
-  } else {
-    cache_ref.push(item);
-  }
+  // Academia and Awards both use this same ordering path.
+  update_ordered_list(cache_ref, item, "is_visible");
 
   try {
     await save_entries(section_key, cache_ref, id_key);
@@ -1275,7 +1388,7 @@ const handle_entry_submit = async (
     show_toast(
       existing_index >= 0
         ? `${section_key} entry updated ✓`
-        : `${section_key} entry created ✓`
+        : `${section_key} entry created ✓`,
     );
     await load_dashboard_data();
   } catch (err) {
@@ -1291,8 +1404,8 @@ academia_form.addEventListener("submit", (event) =>
     academia_cache,
     "academia",
     "academia_id",
-    academia_split
-  )
+    academia_split,
+  ),
 );
 
 awards_form.addEventListener("submit", (event) =>
@@ -1302,31 +1415,29 @@ awards_form.addEventListener("submit", (event) =>
     awards_cache,
     "awards",
     "awards_id",
-    awards_split
-  )
+    awards_split,
+  ),
 );
 
 photo_form.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const id = photo_fields.id.value || `photo_${Date.now()}`;
+  const existing_index = photos_cache.findIndex((entry) => entry.id === id);
 
   const item = {
     id,
     title: photo_fields.title.value.trim(),
     caption: photo_fields.caption.value.trim(),
     image_url: photo_fields.image_url.value.trim(),
-    sort_order: Number(photo_fields.sort_order.value || 1),
+    sort_order: Number(
+      photo_fields.sort_order.value ||
+        get_next_sort_order(photos_cache, "is_visible"),
+    ),
     is_visible: photo_fields.is_visible.checked,
   };
 
-  const existing_index = photos_cache.findIndex((e) => e.id === id);
-
-  if (existing_index >= 0) {
-    photos_cache[existing_index] = item;
-  } else {
-    photos_cache.push(item);
-  }
+  update_ordered_list(photos_cache, item, "is_visible");
 
   try {
     await save_photos();
@@ -1339,7 +1450,7 @@ photo_form.addEventListener("submit", async (event) => {
   }
 });
 
-// New / reset buttons
+// New and reset buttons
 
 new_project_btn.addEventListener("click", clear_project_form);
 new_post_btn.addEventListener("click", clear_post_form);
@@ -1378,7 +1489,8 @@ reset_awards_btn.addEventListener("click", () => {
   clear_entry_form(awards_fields, awards_cache, awards_split);
 });
 
-// Work current role toggle
+// Work current-role toggle
+// A current role has no end date.
 
 if (work_fields.is_current) {
   work_fields.is_current.addEventListener("change", () => {
@@ -1391,7 +1503,8 @@ if (work_fields.is_current) {
   });
 }
 
-// Delegated click handler
+// Edit and delete buttons
+// One document-level listener handles buttons created during rendering.
 
 document.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-action]");
@@ -1444,19 +1557,19 @@ document.addEventListener("click", async (event) => {
 
   if (action === "delete") {
     const ok = window.confirm(
-      "Are you sure you want to delete this item? This cannot be undone."
+      "Are you sure you want to delete this item? This cannot be undone.",
     );
 
     if (!ok) return;
 
     try {
       if (type === "projects") {
-        projects_cache = projects_cache.filter((i) => i.id !== id);
+        delete_from_ordered_list(projects_cache, id, "is_visible");
         await save_projects();
       }
 
       if (type === "posts") {
-        posts_cache = posts_cache.filter((i) => i.id !== id);
+        delete_from_ordered_list(posts_cache, id, "is_published");
         await save_posts();
       }
 
@@ -1471,17 +1584,17 @@ document.addEventListener("click", async (event) => {
       }
 
       if (type === "academia") {
-        academia_cache = academia_cache.filter((i) => i.id !== id);
+        delete_from_ordered_list(academia_cache, id, "is_visible");
         await save_entries("academia", academia_cache, "academia_id");
       }
 
       if (type === "awards") {
-        awards_cache = awards_cache.filter((i) => i.id !== id);
+        delete_from_ordered_list(awards_cache, id, "is_visible");
         await save_entries("awards", awards_cache, "awards_id");
       }
 
       if (type === "photos") {
-        photos_cache = photos_cache.filter((i) => i.id !== id);
+        delete_from_ordered_list(photos_cache, id, "is_visible");
         await save_photos();
       }
 
@@ -1494,7 +1607,7 @@ document.addEventListener("click", async (event) => {
   }
 });
 
-// Search
+// Dashboard search
 
 const get_all_searchable = () => [
   ...projects_cache.map((i) => ({
@@ -1549,7 +1662,7 @@ search_input.addEventListener("input", () => {
         (item.subtitle || "").toLowerCase().includes(query) ||
         (item.organization || "").toLowerCase().includes(query) ||
         (item.description || "").toLowerCase().includes(query) ||
-        (item.caption || "").toLowerCase().includes(query)
+        (item.caption || "").toLowerCase().includes(query),
     )
     .slice(0, 12);
 
@@ -1570,7 +1683,7 @@ search_input.addEventListener("input", () => {
             item.caption ? " · " + item.caption : ""
           }</span>
         </div>
-      `
+      `,
     )
     .join("");
 
@@ -1594,7 +1707,7 @@ search_results.addEventListener("click", (event) => {
 
   setTimeout(() => {
     const btn = document.querySelector(
-      `[data-action='edit'][data-type='${type}'][data-id='${id}']`
+      `[data-action='edit'][data-type='${type}'][data-id='${id}']`,
     );
 
     if (btn) {
@@ -1612,7 +1725,7 @@ document.addEventListener("click", (event) => {
   }
 });
 
-// Auth buttons
+// Login and logout buttons
 
 login_btn.addEventListener("click", async () => {
   clear_local_session();
@@ -1643,7 +1756,12 @@ logout_btn.addEventListener("click", () => {
   end_session("Signed out", true);
 });
 
-/*const boot = async () => {
+// App startup
+// Keep this false on the deployed website. Setting it to true skips the
+// dashboard's client-side login screen and is only for temporary local testing.
+const DEV_BYPASS_LOGIN = false;
+
+const boot = async () => {
   const just_logged_in = await handle_cognito_redirect();
 
   if (just_logged_in || has_valid_session()) {
@@ -1663,10 +1781,7 @@ logout_btn.addEventListener("click", () => {
     clear_local_session();
     set_logged_out_view();
   }
-};*/
-
-
-const DEV_BYPASS_LOGIN = true;
+};
 
 if (DEV_BYPASS_LOGIN) {
   set_logged_in_view("dev mode");
@@ -1679,5 +1794,3 @@ if (DEV_BYPASS_LOGIN) {
 } else {
   boot();
 }
-
-boot();
