@@ -249,6 +249,29 @@ const sort_work_items = (items = []) =>
     return String(b.start_date || "").localeCompare(String(a.start_date || ""));
   });
 
+const insert_at_sort_order = (cache, item) => {
+  const requested_position = Math.max(
+    1,
+    Math.min(Number(item.sort_order) || 1, cache.length + 1)
+  );
+
+  const existing_index = cache.findIndex(
+    (existing_item) => existing_item.id === item.id
+  );
+
+  if (existing_index >= 0) {
+    cache.splice(existing_index, 1);
+  }
+
+  cache.sort((a, b) => a.sort_order - b.sort_order);
+
+  cache.splice(requested_position - 1, 0, item);
+
+  cache.forEach((cache_item, index) => {
+    cache_item.sort_order = index + 1;
+  });
+};
+
 // Auth views
 
 const set_logged_out_view = () => {
@@ -1112,14 +1135,18 @@ post_form.addEventListener("submit", async (event) => {
 
   const existing_index = posts_cache.findIndex((e) => e.id === id);
 
-  if (existing_index >= 0) {
-    posts_cache[existing_index] = {
-      ...posts_cache[existing_index],
-      ...item,
-    };
-  } else {
-    posts_cache.push(item);
+  insert_at_sort_order(posts_cache, item);
+
+  try {
+    await save_posts();
+    clear_post_form();
+    show_toast(existing_index >= 0 ? "Post updated ✓" : "Post created ✓");
+    await load_dashboard_data();
+  } catch (err) {
+    console.error(err);
+    show_toast("Failed to save post", true);
   }
+});
 
   try {
     await save_posts();
