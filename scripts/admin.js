@@ -11,6 +11,8 @@
 //   - Moving or deleting an item automatically closes numbering gaps.
 // =============================================================================
 
+console.log("ADMIN JS SORT FIX VERSION 1");
+
 const API_BASE = "https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod";
 const COGNITO_DOMAIN =
   "https://us-east-2jfof4gtel.auth.us-east-2.amazoncognito.com";
