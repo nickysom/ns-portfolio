@@ -1900,7 +1900,7 @@ logout_btn.addEventListener("click", () => {
 // App startup
 // Keep this false on the deployed website. Setting it to true skips the
 // dashboard's client-side login screen and is only for temporary local testing.
-const DEV_BYPASS_LOGIN = true;
+const DEV_BYPASS_LOGIN  =false;
 
 const boot = async () => {
   const just_logged_in = await handle_cognito_redirect();
