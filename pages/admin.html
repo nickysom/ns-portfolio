@@ -48,7 +48,7 @@
       .topbar {
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: space-between;
         margin-bottom: 24px;
         gap: 12px;
       }
@@ -186,10 +186,6 @@
         display: grid;
       }
 
-      .dashboard_split.always_split {
-        grid-template-columns: 1fr 1fr;
-      }
-
       .item_card_top {
         display: flex;
         align-items: center;
@@ -272,6 +268,7 @@
 
         <div class="sidebar_auth panel">
           <p id="sidebar_auth_text">Signed in</p>
+          <p id="session_countdown" class="session_countdown"></p>
           <div class="auth_actions">
             <button id="logout_btn" type="button">Sign out</button>
           </div>
@@ -312,6 +309,11 @@
 
       <main class="dashboard_main" id="admin_content">
         <div class="topbar">
+          <div class="conn_status" id="conn_status">
+            <span class="conn_dot" id="conn_dot"></span>
+            <span id="conn_text">Checking…</span>
+          </div>
+
           <div class="search_wrapper">
             <svg
               width="16"
@@ -440,7 +442,7 @@
             <p>Add, edit, hide, or delete projects.</p>
           </div>
 
-          <div class="dashboard_split always_split">
+          <div class="dashboard_split" id="projects_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Projects</h3>
@@ -450,7 +452,7 @@
               <div id="projects_list" class="item_list"></div>
             </div>
 
-            <form id="project_form" class="panel form_panel">
+            <form id="project_form" class="panel form_panel entry_form_panel">
               <input id="project_id" type="hidden" />
 
               <div class="form_group">
@@ -516,7 +518,7 @@
                   type="button"
                   class="secondary_btn"
                 >
-                  Clear
+                  Cancel
                 </button>
               </div>
             </form>
@@ -530,7 +532,7 @@
             <p>Create and manage updates or blog posts.</p>
           </div>
 
-          <div class="dashboard_split always_split">
+          <div class="dashboard_split" id="posts_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Posts</h3>
@@ -540,7 +542,7 @@
               <div id="posts_list" class="item_list"></div>
             </div>
 
-            <form id="post_form" class="panel form_panel">
+            <form id="post_form" class="panel form_panel entry_form_panel">
               <input id="post_id" type="hidden" />
 
               <div class="form_group">
@@ -583,7 +585,7 @@
               <div class="form_actions">
                 <button type="submit">Save Post</button>
                 <button id="reset_post_btn" type="button" class="secondary_btn">
-                  Clear
+                  Cancel
                 </button>
               </div>
             </form>
@@ -597,7 +599,7 @@
             <p>Store resume metadata and current resume links.</p>
           </div>
 
-          <div class="dashboard_split always_split">
+          <div class="dashboard_split" id="resumes_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Resumes</h3>
@@ -607,7 +609,7 @@
               <div id="resumes_list" class="item_list"></div>
             </div>
 
-            <form id="resume_form" class="panel form_panel">
+            <form id="resume_form" class="panel form_panel entry_form_panel">
               <input id="resume_id" type="hidden" />
 
               <div class="form_group">
@@ -639,7 +641,7 @@
                   type="button"
                   class="secondary_btn"
                 >
-                  Clear
+                  Cancel
                 </button>
               </div>
             </form>
@@ -944,7 +946,7 @@
             <p>Upload and manage photos displayed on your public portfolio.</p>
           </div>
 
-          <div class="dashboard_split always_split">
+          <div class="dashboard_split" id="photos_split">
             <div class="panel list_panel">
               <div class="list_header">
                 <h3>All Photos</h3>
@@ -954,7 +956,7 @@
               <div id="photos_list" class="item_list"></div>
             </div>
 
-            <form id="photo_form" class="panel form_panel">
+            <form id="photo_form" class="panel form_panel entry_form_panel">
               <input id="photo_id" type="hidden" />
 
               <div class="form_group">
@@ -1014,7 +1016,7 @@
                   type="button"
                   class="secondary_btn"
                 >
-                  Clear
+                  Cancel
                 </button>
               </div>
             </form>

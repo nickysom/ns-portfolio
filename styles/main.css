@@ -1,3 +1,6 @@
+/* ============================================================
+   RESET
+   ============================================================ */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -49,19 +52,21 @@ html {
   }
 }
 
+/* All site-wide colors + the card shadow live here. Change a value
+   once and it updates everywhere that variable is used. */
 :root {
-  --bg-main: #fff8fb;
-  --bg-soft: #fff1f6;
-  --bg-card: #ffffff;
-  --bg-header: rgba(255, 248, 251, 0.94);
-  --text-main: #2f1120;
-  --text-soft: #6f4257;
-  --text-muted: #9b6d82;
-  --border: rgba(173, 39, 86, 0.12);
-  --accent: #c2185b;
-  --accent-dark: #9f1248;
-  --accent-soft: rgba(194, 24, 91, 0.1);
-  --shadow: 0 16px 34px rgba(126, 28, 65, 0.1);
+  --bg-main: #fff8fb; /* page background (behind everything) */
+  --bg-soft: #fff1f6; /* background for "alt" striped sections */
+  --bg-card: #ffffff; /* white cards (project cards, entry cards, etc.) */
+  --bg-header: rgba(255, 248, 251, 0.94); /* sticky header background */
+  --text-main: #2f1120; /* headings / darkest text */
+  --text-soft: #6f4257; /* body/paragraph text */
+  --text-muted: #9b6d82; /* dates, placeholders, least important text */
+  --border: rgba(173, 39, 86, 0.12); /* thin hairline borders */
+  --accent: #c2185b; /* pink brand color used for links/tags/hovers */
+  --accent-dark: #9f1248; /* darker pink for hover states */
+  --accent-soft: rgba(194, 24, 91, 0.1); /* pale pink chip/hover backgrounds */
+  --shadow: 0 16px 34px rgba(126, 28, 65, 0.1); /* card drop shadow */
 }
 
 body {
@@ -82,18 +87,26 @@ a {
   color: inherit;
 }
 
+/* Master side padding for all main content sections.
+   This is the #1 knob for "how much gap on the sides" —
+   raise/lower the 72px value below to widen/narrow the margins. */
 .container {
-  width: min(1400px, 100%);
-  margin: 3rem auto;
-  padding: 0 20px;
+  width: 100%;
+  margin: 3rem 0;
+  padding: 0 72px;
 }
 
-/* ─── HEADER ─── */
+/* ============================================================
+   HEADER (desktop-oriented base; mobile overrides live further
+   down in "MOBILE FIRST DEFAULTS", then get re-enhanced back to
+   this look at @media (min-width: 1025px))
+   ============================================================ */
 
 .site_header {
   position: sticky;
   top: 0;
   z-index: 1000;
+  width: 100%;
   background: var(--bg-header);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(12px);
@@ -106,6 +119,9 @@ a {
   justify-content: space-between;
   gap: 20px;
   padding: 0 40px;
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }
 
 .logo {
@@ -123,6 +139,7 @@ a {
 .main_nav {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 4px;
   flex-wrap: wrap;
   overflow: visible;
@@ -169,10 +186,25 @@ a {
   height: 40px;
 }
 
-/* ─── HERO ─── */
+/* Profile icon should NOT get the pink hover background or the
+   translateY "lift" that other nav links get on hover — it just
+   sits still and stays clickable. This has to be more specific
+   than ".main_nav a:hover" (defined elsewhere) to win. */
+.main_nav a.nav_profile_link:hover,
+.main_nav a.nav_profile_link:focus {
+  background: none;
+  transform: none;
+  color: inherit;
+}
 
+/* ============================================================
+   HERO
+   The animated pastel gradient background. To change the colors,
+   edit the 5 hex values below (order = order they blend through).
+   To change speed, edit "6s" in the animation line (bigger = slower).
+   ============================================================ */
 .hero_banner {
-  min-height: 85vh;
+  min-height: 85vh; /* how tall the banner is — vh = % of screen height */
   display: flex;
   align-items: center;
   position: relative;
@@ -190,6 +222,8 @@ a {
   animation: waveFlow 6s linear infinite;
 }
 
+/* Faint decorative wave texture drawn on top of the gradient.
+   opacity: 0.075 keeps it very subtle — raise it for a more visible pattern. */
 .hero_banner::before {
   content: "";
   position: absolute;
@@ -203,6 +237,9 @@ a {
   background-size: 200% 200%;
 }
 
+/* Soft fade at the bottom of the banner so it blends into the page
+   background instead of ending with a hard edge. height: 250px controls
+   how tall that fade zone is. */
 .hero_banner::after {
   content: "";
   position: absolute;
@@ -224,22 +261,25 @@ a {
 .hero_content {
   position: relative;
   z-index: 1;
-  width: min(1100px, 92%);
-  margin: 0 auto;
-  padding: 80px 0;
+  width: 100%;
+  margin: 0;
+  padding: 80px 72px; /* side value matches .container padding */
   text-align: center;
 }
 
 .hero_content h1 {
   font-family: "Caveat", cursive;
-  font-size: 10.5rem;
+  font-size: clamp(3rem, 12vw, 10.5rem); /* scales down on small screens instead of overflowing */
   font-weight: 700;
   color: var(--text-main);
   margin-bottom: 16px;
+  line-height: 1.05;
 }
 
-/* ─── BUTTONS ─── */
-
+/* ============================================================
+   BUTTONS
+   Base pill shape + glass effect for both button styles.
+   ============================================================ */
 .button_primary,
 .button_secondary {
   position: relative;
@@ -262,6 +302,9 @@ a {
     0 4px 14px rgba(0, 0, 0, 0.15);
 }
 
+/* Spinning rainbow ring, hidden until hover (opacity: 0 -> 0.25).
+   Edit the conic-gradient colors to change the rainbow, or
+   "6.5s" in the animation to change spin speed. */
 .button_primary::before,
 .button_secondary::before {
   content: "";
@@ -315,8 +358,12 @@ a {
   background: rgba(15, 5, 15, 0.65);
 }
 
-/* ─── SECTIONS ─── */
+/* ============================================================
+   SECTIONS
+   ============================================================ */
 
+/* Vertical space above/below each page section. Change "80px" to
+   adjust how much breathing room is between sections. */
 .content_section {
   padding: 80px 0;
 }
@@ -342,8 +389,9 @@ a {
   color: var(--text-main);
 }
 
-/* ─── TEXT CARD ─── */
-
+/* ============================================================
+   TEXT CARD
+   ============================================================ */
 .text_card {
   background: var(--bg-card);
   padding: 28px;
@@ -354,7 +402,6 @@ a {
 }
 
 /* About chat bubble */
-
 .about_bubble {
   position: relative;
   overflow: visible;
@@ -374,7 +421,6 @@ a {
 }
 
 /* Resume */
-
 #current_resume_wrap {
   background: transparent;
   border: none;
@@ -397,8 +443,11 @@ a {
   box-shadow: var(--shadow);
 }
 
-/* ─── PROJECT GRID ─── */
-
+/* ============================================================
+   PROJECT GRID
+   repeat(2, ...) = 2 columns on desktop. Change the 2 to show more/fewer
+   per row (it auto-collapses to 1 column under 900px — see @media below).
+   ============================================================ */
 .project_grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -510,32 +559,40 @@ a {
   min-height: 100%;
 }
 
-/* ─── ENTRY CARDS ─── */
-
+/* ============================================================
+   ENTRY CARDS
+   Used by Academia, Work, and Awards (each section then gets its own
+   layout tweaks further down — see #academia_grid / #work_grid / #awards_grid).
+   ============================================================ */
 .entry_list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 20px;
+  /* no align-items override — grid's default "stretch" makes same-row
+     cards match height automatically (e.g. the 2 Academia entries side
+     by side). Work/Awards below override this grid entirely anyway. */
 }
 
 .entry_card {
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 18px;
-  padding: 22px 26px;
+  padding: 26px 28px;
   display: grid;
-  gap: 10px;
+  gap: 16px; /* space between header / description / "View" link — raise for more "double spaced" feel */
 }
 
 .entry_card_header {
   display: flex;
+  flex-wrap: wrap; /* lets the date badge drop below the title instead of overflowing on narrower 2-column cards */
   justify-content: space-between;
   align-items: flex-start;
-  gap: 16px;
+  gap: 8px 16px;
 }
 
 .entry_card_titles {
   display: grid;
-  gap: 3px;
+  gap: 6px; /* space between title / subtitle / org lines */
 }
 
 .entry_title {
@@ -570,7 +627,7 @@ a {
 .entry_description {
   font-size: 0.93rem;
   color: var(--text-soft);
-  line-height: 1.65;
+  line-height: 1.9; /* the "double spacing" — raise toward 2.2 for even more, or back to 1.65 for tighter */
   margin: 0;
 }
 
@@ -591,7 +648,29 @@ a {
   font-style: italic;
 }
 
-/* ─── WORK EXPERIENCE ─── */
+/* ============================================================
+   ACADEMIA
+   Uses the .entry_list 2-column grid as-is, but the first (most recent/
+   current) entry spans the full width; the next two then naturally
+   share the row below it and stretch to match each other's height.
+   ============================================================ */
+#academia_grid .entry_card:first-child {
+  grid-column: 1 / -1;
+}
+
+/* ============================================================
+   WORK EXPERIENCE
+   Force a single column (override the .entry_list 2-column default)
+   and only show the 3 most recent companies. To show more/fewer,
+   change "n+4" below to "n+(N+1)" where N is how many you want visible.
+   ============================================================ */
+#work_grid {
+  grid-template-columns: 1fr;
+}
+
+#work_grid .entry_card:nth-child(n + 4) {
+  display: none;
+}
 
 .work_company_card {
   display: grid;
@@ -615,8 +694,9 @@ a {
 
 .work_role_header {
   display: flex;
+  flex-wrap: wrap; /* same reasoning as .entry_card_header — avoid overflow on narrow cards */
   justify-content: space-between;
-  gap: 12px;
+  gap: 4px 12px;
   align-items: flex-start;
 }
 
@@ -644,10 +724,122 @@ a {
 
 .work_role_description {
   margin: 10px 0 0;
+  line-height: 1.9; /* matches .entry_description's spacing */
 }
 
-/* ─── ENTRY IMAGE ─── */
+/* ============================================================
+   AWARDS
+   Vertical timeline: one continuous line, trimmed at both ends by the
+   first/last card's own "cap" so it starts/ends exactly at the first
+   and last dot. Each card also gets a centered dot + a short horizontal
+   tick connecting the dot to the card — dot and tick are drawn in the
+   SAME element (::before) so they can never drift out of alignment
+   with each other, and the line (::before on the container) shares the
+   same x-coordinate so everything lines up.
+   ============================================================ */
+#awards_grid {
+  display: block; /* replaces the .entry_list grid — timeline is single-column */
+  position: relative;
+  padding-left: 44px; /* room for the dot + connector tick on the left */
+}
 
+/* the full-height vertical line; the caps below trim its ends */
+#awards_grid::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 6px; /* line's left edge — its center (7px) matches the dot's center below */
+  width: 2px;
+  background: var(--border);
+}
+
+#awards_grid .entry_card {
+  position: relative;
+  margin-bottom: 20px; /* space between stacked cards, since grid gap no longer applies */
+}
+
+#awards_grid .entry_card:last-child {
+  margin-bottom: 0;
+}
+
+/* Dot + horizontal tick, drawn together in one element so they can't
+   go out of sync. Vertically centered on the card via top:50% + the
+   translateY trick. The dot's center sits at x=7px within this strip,
+   which is also where the vertical line above is centered (left:6px,
+   width:2px → center at 7px). If you resize the dot, keep both in sync. */
+#awards_grid .entry_card::before {
+  content: "";
+  position: absolute;
+  left: -44px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 16px;
+  background:
+    radial-gradient(circle 7px at 7px 50%, var(--accent) 97%, transparent 100%),
+    linear-gradient(var(--border), var(--border)) 7px 50% / 37px 2px no-repeat;
+  background-repeat: no-repeat;
+}
+
+/* Cap that erases the line ABOVE the first dot, so it doesn't dangle
+   past the top of the timeline. --bg-main matches the Awards section
+   background (it's a plain content_section, not an alt_section — if
+   you ever move Awards onto a pink section, change this to --bg-soft). */
+#awards_grid .entry_card:first-child::after {
+  content: "";
+  position: absolute;
+  left: -40px;
+  width: 8px;
+  background: var(--bg-main);
+  top: -1px;
+  bottom: calc(50% + 8px); /* stops right at the dot's top edge */
+}
+
+/* Cap that erases the line BELOW the last dot (whichever card is
+   actually last in the DOM — works no matter how many awards you have). */
+#awards_grid .entry_card:last-child::after {
+  content: "";
+  position: absolute;
+  left: -40px;
+  width: 8px;
+  background: var(--bg-main);
+  top: calc(50% + 8px); /* starts right at the dot's bottom edge */
+  bottom: -1px;
+}
+
+/* Optional per-award image. Markup needed for a card that wants one:
+     <div class="entry_card entry_card--with-image">
+       <img class="entry_card_thumb" src="..." alt="">
+       <div class="entry_card_body">
+         ...the existing entry_card_header / entry_description / entry_link...
+       </div>
+     </div>
+   (the text pieces need that entry_card_body wrapper so they keep
+   stacking correctly next to the image instead of scrambling.)
+   Cards without this class/markup are completely unaffected. */
+.entry_card--with-image {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.entry_card_thumb {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.entry_card_body {
+  display: grid;
+  gap: 16px; /* matches the normal .entry_card internal spacing */
+}
+
+/* ============================================================
+   ENTRY IMAGE
+   ============================================================ */
 .entry_image {
   width: 100%;
   height: 160px;
@@ -656,8 +848,11 @@ a {
   margin-bottom: 12px;
 }
 
-/* ─── CONTACT ─── */
-
+/* ============================================================
+   CONTACT
+   Same idea as .project_grid — repeat(2, ...) = 2 columns on desktop,
+   collapses to 1 column under 900px.
+   ============================================================ */
 .contact_grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -704,8 +899,9 @@ a {
   text-decoration: none;
 }
 
-/* ─── FOOTER ─── */
-
+/* ============================================================
+   FOOTER
+   ============================================================ */
 .site_footer {
   background: var(--bg-main);
   border-top: 1px solid var(--border);
@@ -723,13 +919,20 @@ a {
   color: var(--text-muted);
 }
 
-/* ─── MOBILE FIRST DEFAULTS ─── */
+/* ============================================================
+   MOBILE FIRST DEFAULTS
+   These rules apply to ALL screen sizes unless a media query
+   further down overrides them. The @media (min-width: 1025px)
+   block near the bottom is what "re-skins" things for desktop.
+   ============================================================ */
 
 .header_inner {
   min-height: 64px;
-  padding: 16px 20px;
-  flex-direction: column;
-  align-items: flex-start;
+  padding: 16px 24px;
+  flex-direction: row; /* logo + hamburger side by side */
+  flex-wrap: wrap; /* lets the nav dropdown drop to its own row below when open */
+  align-items: center;
+  justify-content: space-between;
   gap: 12px;
   display: flex;
 }
@@ -740,13 +943,17 @@ a {
   font-weight: 700;
   color: #000000;
   transition: color 0.2s ease;
+  order: 1; /* logo first (left) */
 }
 
+/* Nav links list. On mobile this is hidden (display:none) until
+   the hamburger adds the .open class — see .main_nav.open below. */
 .main_nav {
   width: 100%;
   flex-wrap: wrap;
   gap: 0;
   display: flex;
+  order: 3; /* comes after logo (1) and hamburger (2), so it wraps to its own row */
 }
 
 .main_nav a {
@@ -785,6 +992,8 @@ a {
   width: 100%;
 }
 
+/* Floating scroll-to-top / scroll-to-bottom buttons.
+   "right" and "bottom" control how far from the corner they sit. */
 .scroll_controls {
   position: fixed;
   right: 48px;
@@ -857,11 +1066,18 @@ a {
   z-index: 2;
 }
 
-/* ─── RESPONSIVE ─── */
+/* ============================================================
+   RESPONSIVE
+   Breakpoints, largest to smallest:
+   1024px  - nav collapses into hamburger dropdown
+   900px   - project/contact/entry grids go from 2 columns to 1
+   700px   - tightens side padding a bit further for small phones
+   ============================================================ */
 
 @media (max-width: 900px) {
   .project_grid,
-  .contact_grid {
+  .contact_grid,
+  .entry_list {
     grid-template-columns: 1fr;
   }
 
@@ -876,13 +1092,50 @@ a {
   }
 }
 
+/* Below 1024px: hide the full nav, show the hamburger instead.
+   The hamburger's onclick (in the HTML) toggles the .open class,
+   which is what actually makes .main_nav.open visible below. */
 @media (max-width: 1024px) {
+  .site_header {
+    position: sticky;
+  }
+
   .main_nav {
     display: none;
   }
 
+  .main_nav.open {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    width: 100%;
+    background: var(--bg-header);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    padding: 8px 20px 20px;
+    z-index: 999;
+  }
+
+  .main_nav.open a {
+    margin-right: 0;
+    padding: 10px 4px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .main_nav.open a:last-child {
+    border-bottom: none;
+  }
+
+  /* Hamburger button — only visible below 1024px */
   .menu_toggle {
     display: block;
+    order: 2; /* sits to the right of the logo, same row */
     cursor: pointer;
     font-size: 2rem;
     padding: 10px;
@@ -896,6 +1149,8 @@ a {
   }
 }
 
+/* 1025px and up: full desktop nav bar layout (hamburger hidden,
+   logo full size, nav links shown as a row with pill hover states). */
 @media (min-width: 1025px) {
   .menu_toggle {
     display: none !important;
@@ -906,6 +1161,49 @@ a {
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 0 48px;
+    padding: 0 72px; /* keep this matched to .container padding above */
+  }
+
+  .logo {
+    font-size: 3rem;
+  }
+
+  .main_nav {
+    position: static;
+    width: auto;
+    flex-wrap: wrap;
+    gap: 4px;
+    background: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .main_nav a {
+    margin-right: 0;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border-bottom: none;
+  }
+
+  .main_nav a::after {
+    display: none;
+  }
+
+  .main_nav a:hover {
+    color: var(--accent);
+    background: var(--accent-soft);
+    transform: translateY(-2px);
+  }
+}
+
+@media (max-width: 700px) {
+  /* Smallest screens: slightly tighter than desktop's 72px but still
+     roomier than edge-to-edge. Raise/lower this to adjust phone-size gap. */
+  .container {
+    padding: 0 24px;
+  }
+
+  .hero_content {
+    padding: 60px 24px;
   }
 }

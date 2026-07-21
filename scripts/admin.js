@@ -6,12 +6,13 @@
 //
 // Ordered-list rule used by Projects, Posts, Academia, Awards, and Photos:
 //   - Visible/published items are numbered 1, 2, 3, ... with no gaps.
+//   - New items are inserted at position #1 and push everything else down.
 //   - Hidden/draft items are "Unlisted" and have sort_order = null.
 //   - Restoring an unlisted item places it at the end.
 //   - Moving or deleting an item automatically closes numbering gaps.
 // =============================================================================
 
-console.log("ADMIN JS SORT FIX VERSION 1");
+console.log("ADMIN JS SORT FIX VERSION 2");
 
 const API_BASE = "https://d57pcdl042.execute-api.us-east-2.amazonaws.com/prod";
 const COGNITO_DOMAIN =
@@ -24,8 +25,13 @@ const SESSION_TOKEN_KEY = "admin_id_token";
 const SESSION_EMAIL_KEY = "admin_email";
 const SESSION_TIMER_KEY = "admin_session_expires_at";
 const PKCE_VERIFIER_KEY = "pkce_code_verifier";
-const SESSION_MS = 30 * 60 * 1000;
-const WARNING_MS = 2 * 60 * 1000;
+
+// Sessions last 5 minutes. Any activity silently extends them.
+// A warning toast appears 1 minute before auto sign-out.
+const SESSION_MS = 5 * 60 * 1000;
+const WARNING_MS = 1 * 60 * 1000;
+const ACTIVITY_THROTTLE_MS = 15 * 1000;
+const CONNECTION_POLL_MS = 20 * 1000;
 
 let warning_timer = null;
 
@@ -41,6 +47,10 @@ const sidebar_auth_text = document.getElementById("sidebar_auth_text");
 const toast_el = document.getElementById("toast");
 const search_input = document.getElementById("search_input");
 const search_results = document.getElementById("search_results");
+
+const conn_dot = document.getElementById("conn_dot");
+const conn_text = document.getElementById("conn_text");
+const session_countdown = document.getElementById("session_countdown");
 
 const nav_tabs = document.querySelectorAll(".nav_tab");
 const dashboard_tabs = document.querySelectorAll(".dashboard_tab");
@@ -174,9 +184,13 @@ const photo_fields = {
 };
 const reset_photo_btn = document.getElementById("reset_photo_btn");
 
+const projects_split = document.getElementById("projects_split");
+const posts_split = document.getElementById("posts_split");
+const resumes_split = document.getElementById("resumes_split");
 const work_split = document.getElementById("work_split");
 const academia_split = document.getElementById("academia_split");
 const awards_split = document.getElementById("awards_split");
+const photos_split = document.getElementById("photos_split");
 
 // Dashboard state
 // Each cache mirrors one collection returned by the API.
@@ -207,10 +221,11 @@ const show_toast = (text, is_error = false) => {
 };
 
 // Form panel helpers
-// Work, Academia, and Awards use sliding form panels.
+// Every section's editor stays hidden until New or Edit is clicked.
 
-const open_form = (split_el) => split_el.classList.add("form_open");
-const close_form = (split_el) => split_el.classList.remove("form_open");
+const open_form = (split_el) => split_el && split_el.classList.add("form_open");
+const close_form = (split_el) =>
+  split_el && split_el.classList.remove("form_open");
 
 // General helpers
 
@@ -279,19 +294,16 @@ const is_ordered_item_listed = (item, visibility_key = "is_visible") =>
 const get_listed_item_count = (list, visibility_key = "is_visible") =>
   list.filter((item) => is_ordered_item_listed(item, visibility_key)).length;
 
-// Returns the default position for a new visible/published item.
-const get_next_sort_order = (list, visibility_key = "is_visible") =>
-  get_listed_item_count(list, visibility_key) + 1;
-
 // Repairs an ordered list in place.
-// Visible items are sorted and renumbered. Hidden items become Unlisted.
+// Visible items are sorted and renumbered 1..N with no gaps or duplicates.
+// Hidden items become Unlisted.
 const normalize_ordered_list = (list, visibility_key = "is_visible") => {
   const listed_items = list
     .filter((item) => is_ordered_item_listed(item, visibility_key))
     .sort(
       (a, b) =>
-        Number(a.sort_order || Number.MAX_SAFE_INTEGER) -
-        Number(b.sort_order || Number.MAX_SAFE_INTEGER),
+        (Number(a.sort_order) || Number.MAX_SAFE_INTEGER) -
+        (Number(b.sort_order) || Number.MAX_SAFE_INTEGER),
     );
 
   const unlisted_items = list.filter(
@@ -313,6 +325,8 @@ const normalize_ordered_list = (list, visibility_key = "is_visible") => {
 };
 
 // Creates or updates one item and applies the shared ordering rules.
+// Inserting at position N pushes items N, N+1, ... down by one, so two items
+// can never share the same number.
 const update_ordered_list = (list, item, visibility_key = "is_visible") => {
   const old_item = list.find((entry) => entry.id === item.id);
   const was_listed = old_item
@@ -336,17 +350,31 @@ const update_ordered_list = (list, item, visibility_key = "is_visible") => {
     item.sort_order = null;
     unlisted_items.push(item);
   } else {
-    // An item restored from Unlisted always returns at the end.
+    const is_new_item = !old_item;
     const restored_from_unlisted = Boolean(old_item) && !was_listed;
-    const requested_position = restored_from_unlisted
-      ? listed_items.length + 1
-      : Math.max(
-          1,
-          Math.min(
-            Number(item.sort_order) || listed_items.length + 1,
-            listed_items.length + 1,
-          ),
-        );
+
+    let requested_position;
+
+    if (restored_from_unlisted) {
+      // An item restored from Unlisted always returns at the end.
+      requested_position = listed_items.length + 1;
+    } else if (is_new_item) {
+      // Brand-new items take the requested spot (default #1) and push
+      // everything else down.
+      requested_position = Math.max(
+        1,
+        Math.min(Number(item.sort_order) || 1, listed_items.length + 1),
+      );
+    } else {
+      // Edited items move to their requested spot, clamped to the list.
+      requested_position = Math.max(
+        1,
+        Math.min(
+          Number(item.sort_order) || listed_items.length + 1,
+          listed_items.length + 1,
+        ),
+      );
+    }
 
     // Inserting here automatically pushes later items down one position.
     listed_items.splice(requested_position - 1, 0, item);
@@ -368,6 +396,88 @@ const delete_from_ordered_list = (list, id, visibility_key = "is_visible") => {
   return normalize_ordered_list(list, visibility_key);
 };
 
+// Connection status light
+// Pings the API on an interval and colors the dot in the top bar.
+
+let conn_interval = null;
+
+const set_conn_state = (state) => {
+  if (!conn_dot || !conn_text) return;
+
+  conn_dot.className =
+    "conn_dot" +
+    (state === "online" ? " online" : state === "offline" ? " offline" : "");
+
+  conn_text.textContent =
+    state === "online"
+      ? "Connected"
+      : state === "offline"
+        ? "Offline"
+        : "Checking…";
+};
+
+const check_connection = async () => {
+  try {
+    const response = await fetch(`${API_BASE}/content/site`, {
+      cache: "no-store",
+    });
+
+    set_conn_state(response.ok ? "online" : "offline");
+  } catch {
+    set_conn_state("offline");
+  }
+};
+
+const start_connection_monitor = () => {
+  if (conn_interval) clearInterval(conn_interval);
+
+  set_conn_state("checking");
+  check_connection();
+
+  conn_interval = setInterval(check_connection, CONNECTION_POLL_MS);
+};
+
+const stop_connection_monitor = () => {
+  if (conn_interval) {
+    clearInterval(conn_interval);
+    conn_interval = null;
+  }
+};
+
+// Session countdown display
+// Shows the time remaining before auto sign-out in the sidebar.
+
+let countdown_interval = null;
+
+const update_countdown = () => {
+  if (!session_countdown) return;
+
+  const expires_at = Number(sessionStorage.getItem(SESSION_TIMER_KEY) || 0);
+  const remaining = Math.max(0, expires_at - Date.now());
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+
+  session_countdown.textContent = `Auto sign-out in ${minutes}:${String(
+    seconds,
+  ).padStart(2, "0")}`;
+};
+
+const start_countdown = () => {
+  if (countdown_interval) clearInterval(countdown_interval);
+
+  update_countdown();
+  countdown_interval = setInterval(update_countdown, 1000);
+};
+
+const stop_countdown = () => {
+  if (countdown_interval) {
+    clearInterval(countdown_interval);
+    countdown_interval = null;
+  }
+
+  if (session_countdown) session_countdown.textContent = "";
+};
+
 // Authentication views
 // Switches the page between signed-in and signed-out layouts.
 
@@ -378,6 +488,9 @@ const set_logged_out_view = () => {
   logout_btn.style.display = "none";
   welcome_screen.style.display = "flex";
   dashboard_shell.style.display = "none";
+
+  stop_connection_monitor();
+  stop_countdown();
 };
 
 const set_logged_in_view = (email = "") => {
@@ -387,10 +500,15 @@ const set_logged_in_view = (email = "") => {
   logout_btn.style.display = "inline-block";
   welcome_screen.style.display = "none";
   dashboard_shell.style.display = "grid";
+
+  start_connection_monitor();
+  start_countdown();
 };
 
 // Session management
-// Stores the login token in sessionStorage and signs out after inactivity.
+// Stores the login token in sessionStorage. Sessions last 5 minutes; any
+// click or keystroke silently extends them, and a toast warns 1 minute before
+// automatic sign-out.
 
 const clear_local_session = () => {
   sessionStorage.removeItem(SESSION_TOKEN_KEY);
@@ -442,13 +560,6 @@ const end_session = (message = "Signed out", redirectToCognito = false) => {
   }
 };
 
-const extend_session = () => {
-  const expires_at = Date.now() + SESSION_MS;
-  sessionStorage.setItem(SESSION_TIMER_KEY, String(expires_at));
-  schedule_auto_logout();
-  show_toast("Session extended ✓");
-};
-
 const schedule_auto_logout = () => {
   if (logout_timer) clearTimeout(logout_timer);
   if (warning_timer) clearTimeout(warning_timer);
@@ -465,15 +576,9 @@ const schedule_auto_logout = () => {
 
   if (warning_time > 0) {
     warning_timer = setTimeout(() => {
-      const stay = window.confirm(
-        "Your session will expire in 2 minutes. Press OK to stay signed in.",
+      show_toast(
+        "Session expires in 1 minute — click anywhere to stay signed in.",
       );
-
-      if (stay) {
-        extend_session();
-      } else {
-        end_session("Signed out", true);
-      }
     }, warning_time);
   }
 
@@ -481,17 +586,6 @@ const schedule_auto_logout = () => {
     () => end_session("Session expired", true),
     remaining,
   );
-};
-
-const start_session = (token, email) => {
-  const expires_at = Date.now() + SESSION_MS;
-
-  sessionStorage.setItem(SESSION_TOKEN_KEY, token);
-  sessionStorage.setItem(SESSION_EMAIL_KEY, email);
-  sessionStorage.setItem(SESSION_TIMER_KEY, String(expires_at));
-
-  set_logged_in_view(email);
-  schedule_auto_logout();
 };
 
 const has_valid_session = () => {
@@ -503,6 +597,38 @@ const has_valid_session = () => {
   if (email.toLowerCase() !== ALLOWED_ADMIN_EMAIL.toLowerCase()) return false;
 
   return true;
+};
+
+// Activity keeps the session alive. Throttled so the timers are not
+// rescheduled on every single click.
+
+let last_activity_bump = 0;
+
+const handle_activity = () => {
+  if (dashboard_shell.style.display === "none") return;
+  if (!has_valid_session()) return;
+
+  const now = Date.now();
+  if (now - last_activity_bump < ACTIVITY_THROTTLE_MS) return;
+
+  last_activity_bump = now;
+  sessionStorage.setItem(SESSION_TIMER_KEY, String(now + SESSION_MS));
+  schedule_auto_logout();
+};
+
+["click", "keydown", "input"].forEach((event_name) => {
+  document.addEventListener(event_name, handle_activity, true);
+});
+
+const start_session = (token, email) => {
+  const expires_at = Date.now() + SESSION_MS;
+
+  sessionStorage.setItem(SESSION_TOKEN_KEY, token);
+  sessionStorage.setItem(SESSION_EMAIL_KEY, email);
+  sessionStorage.setItem(SESSION_TIMER_KEY, String(expires_at));
+
+  set_logged_in_view(email);
+  schedule_auto_logout();
 };
 
 // Cognito PKCE authentication helpers
@@ -631,9 +757,11 @@ const api_put = async (id, payload) => {
 
   if (!response.ok) {
     const text = await response.text();
+    set_conn_state("offline");
     throw new Error(text || `Failed to save ${id}`);
   }
 
+  set_conn_state("online");
   return response.json();
 };
 
@@ -649,6 +777,8 @@ const safe_get = async (id) => {
 
 // Normalizers
 // Convert API field names into the simpler shape used by the dashboard.
+// Every ordered list is renumbered on load, so a bad or duplicated
+// sort_order coming back from the API can never reach the screen.
 
 const normalize_projects = (items = []) => {
   const normalized = items.map((item, index) => ({
@@ -662,7 +792,7 @@ const normalize_projects = (items = []) => {
     is_visible: item.is_visible !== false,
     is_featured: !!item.is_featured,
     sort_order:
-      item.is_visible === false ? null : Number(item.sort_order ?? index + 1),
+      item.is_visible === false ? null : Number(item.sort_order || index + 1),
   }));
 
   return normalize_ordered_list(normalized, "is_visible");
@@ -678,7 +808,7 @@ const normalize_posts = (items = []) => {
     cover_image_url: item.cover_image_url || "",
     is_published: item.is_published !== false,
     sort_order:
-      item.is_published === false ? null : Number(item.sort_order ?? index + 1),
+      item.is_published === false ? null : Number(item.sort_order || index + 1),
   }));
 
   return normalize_ordered_list(normalized, "is_published");
@@ -717,7 +847,7 @@ const normalize_entries = (items = [], id_key) => {
     description: item.description || "",
     link: item.link || "",
     sort_order:
-      item.is_visible === false ? null : Number(item.sort_order ?? index + 1),
+      item.is_visible === false ? null : Number(item.sort_order || index + 1),
     is_visible: item.is_visible !== false,
   }));
 
@@ -731,7 +861,7 @@ const normalize_photos = (items = []) => {
     caption: item.caption || "",
     image_url: item.image_url || "",
     sort_order:
-      item.is_visible === false ? null : Number(item.sort_order ?? index + 1),
+      item.is_visible === false ? null : Number(item.sort_order || index + 1),
     is_visible: item.is_visible !== false,
   }));
 
@@ -744,7 +874,7 @@ const render_list = (container, items, type) => {
   if (!container) return;
 
   if (!items.length) {
-    container.innerHTML = `<div class='item_card'><p>No ${type} yet.</p></div>`;
+    container.innerHTML = `<div class='item_card'><p>No ${type} yet. Click "New" to add one.</p></div>`;
     return;
   }
 
@@ -843,7 +973,9 @@ const update_counts = () => {
 };
 
 // Clear forms
-// Resets each editor to its default "new item" state.
+// Resets each editor to its default "new item" state and closes its panel.
+// New items default to position #1 (newest first); saving one pushes the
+// rest of the list down automatically.
 
 const clear_project_form = () => {
   project_fields.id.value = "";
@@ -855,10 +987,8 @@ const clear_project_form = () => {
   project_fields.image_url.value = "";
   project_fields.is_visible.checked = true;
   project_fields.is_featured.checked = false;
-  project_fields.sort_order.value = get_next_sort_order(
-    projects_cache,
-    "is_visible",
-  );
+  project_fields.sort_order.value = 1;
+  close_form(projects_split);
 };
 
 const clear_post_form = () => {
@@ -869,10 +999,8 @@ const clear_post_form = () => {
   post_fields.content.value = "";
   post_fields.cover_image_url.value = "";
   post_fields.is_published.checked = true;
-  post_fields.sort_order.value = get_next_sort_order(
-    posts_cache,
-    "is_published",
-  );
+  post_fields.sort_order.value = 1;
+  close_form(posts_split);
 };
 
 const clear_resume_form = () => {
@@ -881,6 +1009,7 @@ const clear_resume_form = () => {
   resume_fields.file_name.value = "";
   resume_fields.file_url.value = "";
   resume_fields.is_current.checked = false;
+  close_form(resumes_split);
 };
 
 const clear_work_form = () => {
@@ -910,7 +1039,7 @@ const clear_entry_form = (fields, cache, split_el) => {
   fields.date_range.value = "";
   fields.description.value = "";
   fields.link.value = "";
-  fields.sort_order.value = get_next_sort_order(cache, "is_visible");
+  fields.sort_order.value = 1;
   fields.is_visible.checked = true;
 
   if (split_el) {
@@ -924,15 +1053,13 @@ const clear_photo_form = () => {
   photo_fields.caption.value = "";
   photo_fields.file.value = "";
   photo_fields.image_url.value = "";
-  photo_fields.sort_order.value = get_next_sort_order(
-    photos_cache,
-    "is_visible",
-  );
+  photo_fields.sort_order.value = 1;
   photo_fields.is_visible.checked = true;
+  close_form(photos_split);
 };
 
 // Fill forms
-// Copies a selected item into its editor for updating.
+// Copies a selected item into its editor for updating and opens the panel.
 
 const fill_project_form = (item) => {
   project_fields.id.value = item.id;
@@ -946,6 +1073,7 @@ const fill_project_form = (item) => {
   project_fields.is_featured.checked = !!item.is_featured;
   project_fields.sort_order.value = item.sort_order ?? "";
   switch_tab("projects_tab");
+  open_form(projects_split);
 };
 
 const fill_post_form = (item) => {
@@ -958,6 +1086,7 @@ const fill_post_form = (item) => {
   post_fields.is_published.checked = !!item.is_published;
   post_fields.sort_order.value = item.sort_order ?? "";
   switch_tab("posts_tab");
+  open_form(posts_split);
 };
 
 const fill_resume_form = (item) => {
@@ -967,6 +1096,7 @@ const fill_resume_form = (item) => {
   resume_fields.file_url.value = item.file_url || "";
   resume_fields.is_current.checked = !!item.is_current;
   switch_tab("resumes_tab");
+  open_form(resumes_split);
 };
 
 const fill_work_form = (item) => {
@@ -1021,6 +1151,7 @@ const fill_photo_form = (item) => {
   photo_fields.file.value = "";
 
   switch_tab("photos_tab");
+  open_form(photos_split);
 };
 
 // API save helpers
@@ -1223,10 +1354,7 @@ project_form.addEventListener("submit", async (event) => {
     image_url: project_fields.image_url.value.trim(),
     is_visible: project_fields.is_visible.checked,
     is_featured: project_fields.is_featured.checked,
-    sort_order: Number(
-      project_fields.sort_order.value ||
-        get_next_sort_order(projects_cache, "is_visible"),
-    ),
+    sort_order: Number(project_fields.sort_order.value || 1),
   };
 
   // The shared helper handles creating, moving, hiding, and restoring.
@@ -1257,10 +1385,7 @@ post_form.addEventListener("submit", async (event) => {
     content: post_fields.content.value.trim(),
     cover_image_url: post_fields.cover_image_url.value.trim(),
     is_published: post_fields.is_published.checked,
-    sort_order: Number(
-      post_fields.sort_order.value ||
-        get_next_sort_order(posts_cache, "is_published"),
-    ),
+    sort_order: Number(post_fields.sort_order.value || 1),
   };
 
   // Draft posts are Unlisted; republishing appends them to the end.
@@ -1432,10 +1557,7 @@ photo_form.addEventListener("submit", async (event) => {
     title: photo_fields.title.value.trim(),
     caption: photo_fields.caption.value.trim(),
     image_url: photo_fields.image_url.value.trim(),
-    sort_order: Number(
-      photo_fields.sort_order.value ||
-        get_next_sort_order(photos_cache, "is_visible"),
-    ),
+    sort_order: Number(photo_fields.sort_order.value || 1),
     is_visible: photo_fields.is_visible.checked,
   };
 
@@ -1452,12 +1574,29 @@ photo_form.addEventListener("submit", async (event) => {
   }
 });
 
-// New and reset buttons
+// New buttons
+// Clicking "New" resets the editor and opens the panel. Forms never open on
+// their own.
 
-new_project_btn.addEventListener("click", clear_project_form);
-new_post_btn.addEventListener("click", clear_post_form);
-new_resume_btn.addEventListener("click", clear_resume_form);
-new_photo_btn.addEventListener("click", clear_photo_form);
+new_project_btn.addEventListener("click", () => {
+  clear_project_form();
+  open_form(projects_split);
+});
+
+new_post_btn.addEventListener("click", () => {
+  clear_post_form();
+  open_form(posts_split);
+});
+
+new_resume_btn.addEventListener("click", () => {
+  clear_resume_form();
+  open_form(resumes_split);
+});
+
+new_photo_btn.addEventListener("click", () => {
+  clear_photo_form();
+  open_form(photos_split);
+});
 
 new_work_btn.addEventListener("click", () => {
   clear_work_form();
@@ -1473,6 +1612,9 @@ new_awards_btn.addEventListener("click", () => {
   clear_entry_form(awards_fields, awards_cache, null);
   open_form(awards_split);
 });
+
+// Cancel buttons
+// Each clear function also closes its panel.
 
 reset_project_btn.addEventListener("click", clear_project_form);
 reset_post_btn.addEventListener("click", clear_post_form);
@@ -1692,6 +1834,7 @@ search_input.addEventListener("input", () => {
   search_results.classList.add("visible");
 });
 
+// Clicking a search result jumps to that item and opens it for editing.
 search_results.addEventListener("click", (event) => {
   const result = event.target.closest(".search_result_item");
 
@@ -1703,16 +1846,14 @@ search_results.addEventListener("click", (event) => {
   search_input.value = "";
   search_results.classList.remove("visible");
 
-  if (type === "work") open_form(work_split);
-  if (type === "academia") open_form(academia_split);
-  if (type === "awards") open_form(awards_split);
-
   setTimeout(() => {
     const btn = document.querySelector(
       `[data-action='edit'][data-type='${type}'][data-id='${id}']`,
     );
 
     if (btn) {
+      btn.click();
+
       btn.closest(".item_card").scrollIntoView({
         behavior: "smooth",
         block: "center",
@@ -1750,18 +1891,16 @@ login_btn.addEventListener("click", async () => {
   window.location.href = loginUrl;
 });
 
+// Sign out is immediate: the local session is wiped, then the browser is sent
+// to Cognito's logout endpoint so the Google-backed session ends too.
 logout_btn.addEventListener("click", () => {
-  const confirmed = window.confirm("Are you sure you want to log out?");
-
-  if (!confirmed) return;
-
   end_session("Signed out", true);
 });
 
 // App startup
 // Keep this false on the deployed website. Setting it to true skips the
 // dashboard's client-side login screen and is only for temporary local testing.
-const DEV_BYPASS_LOGIN = false;
+const DEV_BYPASS_LOGIN = true;
 
 const boot = async () => {
   const just_logged_in = await handle_cognito_redirect();
